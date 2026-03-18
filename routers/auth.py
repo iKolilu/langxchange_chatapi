@@ -41,6 +41,11 @@ async def login(
             token_type=result.get("token_type", "bearer"),
             expires_at=result.get("expires_at")
         )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
     except HTTPStatusError as e:
         if e.response.status_code == 401:
             raise HTTPException(

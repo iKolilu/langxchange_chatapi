@@ -57,13 +57,23 @@ class ChatServiceClient:
         """Get the current access token."""
         return self._access_token
 
-    async def authenticate(self) -> Dict[str, Any]:
+    async def authenticate(
+        self,
+        email: Optional[str] = None,
+        password: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Authenticate with the external API using the API key for external chat.
 
         Returns:
             Authentication response with access token
         """
+        auth_email = email or self.email
+        auth_password = password or self.password
+
+        if auth_email != self.email or auth_password != self.password:
+            raise ValueError("Invalid credentials")
+
         client = await self._get_client()
 
         url = f"{self.base_url}/exchat/auth/{self.company_id}/{self.app_uuid}"
