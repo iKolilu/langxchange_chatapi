@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  chat_api:
+    build: .
+    container_name: chat_api_gateway
+    ports:
+      - "8083:8083"
+    env_file:
+      - .env
+    restart: unless-stopped
+    # If the app needs to speak to another container in the same network,
+    # add a network configuration here.

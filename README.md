@@ -29,7 +29,24 @@ chat_api/
     └── chat_service.py  # External API client
 ```
 
-## Installation
+## Running with Docker
+
+1. **Build and start the container:**
+   ```bash
+   docker compose up -d --build
+   ```
+
+2. **Check logs:**
+   ```bash
+   docker compose logs -f
+   ```
+
+3. **Stop the service:**
+   ```bash
+   docker compose down
+   ```
+
+## Running Locally
 
 1. **Create a virtual environment:**
    ```bash
@@ -48,15 +65,14 @@ chat_api/
    # Edit .env with your settings
    ```
 
-## Running the Server
-
-```bash
-# Development mode with auto-reload
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-# Or run directly
-python main.py
-```
+4. **Run the Server:**
+   ```bash
+   # Development mode with auto-reload
+   uvicorn main:app --reload --host 0.0.0.0 --port 8083
+   
+   # Or run directly
+   python main.py
+   ```
 
 ## API Endpoints
 
@@ -66,12 +82,11 @@ python main.py
 - `GET /config/info` - Non-sensitive configuration info
 
 ### Authentication
-- `POST /auth/login` - Authenticate with the external API
+- `POST /auth/login` - Authenticate with the external API (uses API Key + Company ID)
 - `GET /auth/status` - Check authentication status
 
 ### Sessions
 - `POST /sessions` - Create a new chat session
-- `GET /sessions/{session_uuid}` - Get session status
 
 ### Messages
 - `POST /sessions/{session_uuid}/messages` - Send a message
@@ -84,11 +99,11 @@ python main.py
 ### Quick Chat (Simplest)
 
 ```bash
-curl -X POST http://localhost:8000/chat \
+curl -X POST http://localhost:8083/chat \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Hello, how are you?",
-    "user_id": "user-123"
+    "user_id": "ext@demo.com"
   }'
 ```
 
@@ -96,24 +111,23 @@ curl -X POST http://localhost:8000/chat \
 
 1. **Authenticate:**
    ```bash
-   curl -X POST http://localhost:8000/auth/login \
+   curl -X POST http://localhost:8083/auth/login \
      -H "Content-Type: application/json" \
      -d '{}'
    ```
 
 2. **Create Session:**
    ```bash
-   curl -X POST http://localhost:8000/sessions \
+   curl -X POST http://localhost:8083/sessions \
      -H "Content-Type: application/json" \
      -d '{
-       "user_id": "user-123",
-       "system_prompt": "You are a helpful assistant."
+       "user_id": "ext@demo.com"
      }'
    ```
 
 3. **Send Message:**
    ```bash
-   curl -X POST http://localhost:8000/sessions/{session_uuid}/messages \
+   curl -X POST http://localhost:8083/sessions/{session_uuid}/messages \
      -H "Content-Type: application/json" \
      -d '{
        "message": "What is the capital of France?"
@@ -123,22 +137,20 @@ curl -X POST http://localhost:8000/chat \
 ## API Documentation
 
 Once the server is running, access:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **Swagger UI**: http://localhost:8083/docs
+- **ReDoc**: http://localhost:8083/redoc
 
 ## Configuration
 
-All configuration can be set via environment variables:
+All configuration can be set via environment variables in `.env`:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `BASE_URL` | External API base URL | https://api.langxchange.ai |
-| `COMPANY_ID` | Company identifier | demo-company-001 |
-| `APP_UUID` | Application UUID | GMA73HIA1LSQ |
-| `API_KEY` | API key | (configured) |
+| `COMPANY_ID` | Company identifier | (configured) |
+| `APP_UUID` | Application UUID | (configured) |
+| `API_KEY` | API key (X-API-KEY) | (configured) |
 | `AGENT_UUID` | Default agent UUID | (configured) |
-| `AUTH_EMAIL` | Authentication email | ext@demo.com |
-| `AUTH_PASSWORD` | Authentication password | (configured) |
 | `DEBUG` | Enable debug mode | false |
 
 ## License
