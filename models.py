@@ -60,7 +60,7 @@ class ConfigurationsUsed(BaseModel):
 
 class SessionResponse(BaseModel):
     """Response model for session operations."""
-    session_id: int
+    session_id: str
     session_uuid: str
     agent_name: str
     status: Optional[str] = None
