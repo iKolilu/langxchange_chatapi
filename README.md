@@ -2,29 +2,36 @@
 
 A comprehensive toolkit for integrating and interacting with the **api.langxchange.ai** service. This project provides both a robust Python-based backend/CLI and a modern React-based frontend for real-time AI chat.
 
-## Project Structure
+## 🏗️ Project Structure
 
-The project is organized into two main components:
+The project follows a modular architecture for seamless backend/frontend development:
 
-- **[Backend (Python)](file:///home/ikolilu-backend/dev/chat_api/backend/python)**: Contains the FastAPI gateway and command-line tools for REST and Streaming interactions.
-- **[Frontend (React)](file:///home/ikolilu-backend/dev/chat_api/frontend/react)**: A premium web application that uses WebSockets for real-time, low-latency chat with AI agents.
+- **[backend/](file:///home/ikolilu-backend/dev/chat_api/backend)**: Core backend logic and management tools.
+    - **[python/](file:///home/ikolilu-backend/dev/chat_api/backend/python)**: Parent directory for all Python microservices and core logic.
+    - **[simple_chat_cli.py](file:///home/ikolilu-backend/dev/chat_api/backend/simple_chat_cli.py)**: The main interactive terminal interface for the LangXchange API.
+    - **[langxchange_examples/](file:///home/ikolilu-backend/dev/chat_api/backend/python/langxchange_examples)**: A rich collection of usage patterns (RAG, Graph, MCP, etc.).
+- **[frontend/react/](file:///home/ikolilu-backend/dev/chat_api/frontend/react)**: A premium web application that uses WebSockets for real-time, low-latency chat with AI agents.
 
 ---
 
-## 🛠️ Quick Start
+## 🚀 Quick Start
 
-### 1. Configuration
-Both components use a shared configuration pattern. Initialize your environment variables:
+### 1. Environment Setup
+Both components follow a clean, secret-free pattern. All credentials must be provided via environment variables.
 
-```bash
-cp backend/python/.env.example .env
-# Edit .env with your credentials (API Key, Company ID, etc.)
-```
+1.  **Configure Backend**:
+    ```bash
+    cp backend/python/.env.example .env
+    # Edit .env and enter your Company ID, API Key, and Application ID
+    ```
 
-**Target Service**: `https://api.langxchange.ai`
+2.  **Configure Frontend**:
+    Ensure `API_BASE_URL` in `src/services/api.ts` correctly points to your production or local instance.
+
+---
 
 ### 2. Backend & CLI (Python)
-The backend provides a CLI tool for testing authentication, session management, and streaming.
+The backend provides a terminal-based playground for testing authentication, session management, and streaming.
 
 ```bash
 cd backend/python
@@ -32,17 +39,20 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# Run the interactive CLI
-python langxchange_examples/simple_chat_cli.py
+# Run the interactive CLI (from the backend root)
+python ../simple_chat_cli.py
 ```
 
-**Features**:
-- 🚀 **Quick Start**: One-command auth, session creation, and chat.
-- ⚡ **Streaming**: Real-time character streaming in the terminal.
-- 📊 **Metadata**: Real-time display of tokens used and processing time.
+**Key Features**:
+*   ⚡ **Full Streaming**: Real-time character-by-character response display.
+*   📊 **Live Metadata**: Real-time tracking of token usage and processing latency (ms).
+*   🤖 **Session Management**: Easily create, resume, or delete chat sessions.
+*   🛡️ **Security**: Hardened for production with all secrets moved to environment variables.
+
+---
 
 ### 3. Frontend (React)
-A modern, high-performance chat interface built with Vite and Tailwind-inspired aesthetics.
+A modern, high-performance chat interface built with Vite, Framer Motion, and Tailwind-inspired aesthetics.
 
 ```bash
 cd frontend/react
@@ -50,37 +60,31 @@ npm install
 npm run dev
 ```
 
-**Features**:
-- 🌐 **WebSockets**: Real-time bidirectional communication for low-latency chat.
-- 🎨 **Premium UI**: Dark-mode primary design with smooth Framer Motion animations.
-- 📱 **Responsive**: Fully optimized for mobile and desktop browsers.
+**Key Features**:
+*   🌐 **Native WebSockets**: Bidirectional, low-latency communication for real-time chat.
+*   🎨 **Premium Dark-Mode**: A state-of-the-art UI with smooth micro-animations.
+*   📱 **Fully Responsive**: Optimized for both mobile and desktop experiences.
+*   ⚡ **Streaming Support**: Character-level animation of responses for better UX.
 
 ---
 
 ## 🔌 Connecting to langxchange.ai
 
-The application connects to the **LangXchange External Chat API**.
+The application is fully compatible with the **LangXchange External Chat API**.
 
-### Endpoints used:
-- **Auth**: `POST /exchat/auth/{company_id}/{app_uuid}` (requires `x-api-key`)
+### Core Endpoints:
+- **Auth**: `POST /exchat/auth/{company_id}/{app_uuid}`
 - **Session**: `POST /exchat/{agent_uuid}/{app_uuid}/{user_id}/session`
-- **Streaming (REST)**: `POST /exchat/{agent_uuid}/{app_uuid}/session/{session_uuid}/stream` (SSE)
-- **Real-time (WebSocket)**: `ws://api.langxchange.ai/exchat/ws/{session_uuid}`
-
-### Security
-All requests require a valid **Bearer Token** obtained via the authentication endpoint. Ensure your `API_KEY` is kept secret and never exposed in public client-side code in production.
+- **Socket**: `ws://api.langxchange.ai/exchat/ws/{session_uuid}`
+- **Delete**: `DELETE /exchat/session/{session_uuid}`
 
 ---
 
-## 🏗️ Development
+## 🔒 Security Best Practices
 
-### Local API Proxy (Optional)
-You can run the included FastAPI gateway to provide a simplified REST interface:
-```bash
-cd backend/python
-uvicorn main:app --reload --port 8083
-```
-Documentation: [http://localhost:8083/docs](http://localhost:8083/docs)
+1.  **No Hardcoded Secrets**: All examples and source files have been purged of secrets. Use `.env` or system environment variables for `OPENAI_API_KEY`, `GOOGLE_API_KEY`, etc.
+2.  **Bearer Authentication**: All requests require a valid JWT token obtained via the authentication endpoint.
+3.  **Cross-Origin Isolation**: Ensure your production deployment restricts `CORS` to authorized domains.
 
 ---
 
