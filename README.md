@@ -1,146 +1,88 @@
-# Chat API Gateway
+# LangXchange Chat API & UI
 
-A FastAPI backend service that wraps the external LangXchange chat API, providing a clean REST interface for chat operations.
-
-## Features
-
-- **Authentication Management**: Handles token-based authentication with the external API
-- **Session Management**: Create and manage chat sessions
-- **Message Handling**: Send messages and receive AI responses
-- **Quick Chat Endpoint**: Convenience endpoint for simple interactions
-- **Auto-reconnection**: Automatically re-authenticates when tokens expire
+A comprehensive toolkit for integrating and interacting with the **api.langxchange.ai** service. This project provides both a robust Python-based backend/CLI and a modern React-based frontend for real-time AI chat.
 
 ## Project Structure
 
-```
-chat_api/
-├── main.py              # FastAPI application entry point
-├── config.py            # Configuration settings
-├── models.py            # Pydantic models
-├── requirements.txt     # Python dependencies
-├── .env.example         # Environment variables template
-├── routers/
-│   ├── __init__.py
-│   ├── auth.py          # Authentication routes
-│   ├── sessions.py      # Session management routes
-│   └── messages.py      # Message handling routes
-└── services/
-    ├── __init__.py
-    └── chat_service.py  # External API client
-```
+The project is organized into two main components:
 
-## Installation
+- **[Backend (Python)](file:///home/ikolilu-backend/dev/chat_api/backend/python)**: Contains the FastAPI gateway and command-line tools for REST and Streaming interactions.
+- **[Frontend (React)](file:///home/ikolilu-backend/dev/chat_api/frontend/react)**: A premium web application that uses WebSockets for real-time, low-latency chat with AI agents.
 
-1. **Create a virtual environment:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+---
 
-2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+## 🛠️ Quick Start
 
-3. **Configure environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your settings
-   ```
-
-## Running the Server
+### 1. Configuration
+Both components use a shared configuration pattern. Initialize your environment variables:
 
 ```bash
-# Development mode with auto-reload
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-# Or run directly
-python main.py
+cp backend/python/.env.example .env
+# Edit .env with your credentials (API Key, Company ID, etc.)
 ```
 
-## API Endpoints
+**Target Service**: `https://api.langxchange.ai`
 
-### Health & Info
-- `GET /` - API information
-- `GET /health` - Health check
-- `GET /config/info` - Non-sensitive configuration info
-
-### Authentication
-- `POST /auth/login` - Authenticate with the external API
-- `GET /auth/status` - Check authentication status
-
-### Sessions
-- `POST /sessions` - Create a new chat session
-- `GET /sessions/{session_uuid}` - Get session status
-
-### Messages
-- `POST /sessions/{session_uuid}/messages` - Send a message
-
-### Quick Chat
-- `POST /chat` - Convenience endpoint (auto-creates session if needed)
-
-## Usage Examples
-
-### Quick Chat (Simplest)
+### 2. Backend & CLI (Python)
+The backend provides a CLI tool for testing authentication, session management, and streaming.
 
 ```bash
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "Hello, how are you?",
-    "user_id": "user-123"
-  }'
+cd backend/python
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Run the interactive CLI
+python langxchange_examples/simple_chat_cli.py
 ```
 
-### Full Flow
+**Features**:
+- 🚀 **Quick Start**: One-command auth, session creation, and chat.
+- ⚡ **Streaming**: Real-time character streaming in the terminal.
+- 📊 **Metadata**: Real-time display of tokens used and processing time.
 
-1. **Authenticate:**
-   ```bash
-   curl -X POST http://localhost:8000/auth/login \
-     -H "Content-Type: application/json" \
-     -d '{}'
-   ```
+### 3. Frontend (React)
+A modern, high-performance chat interface built with Vite and Tailwind-inspired aesthetics.
 
-2. **Create Session:**
-   ```bash
-   curl -X POST http://localhost:8000/sessions \
-     -H "Content-Type: application/json" \
-     -d '{
-       "user_id": "user-123",
-       "system_prompt": "You are a helpful assistant."
-     }'
-   ```
+```bash
+cd frontend/react
+npm install
+npm run dev
+```
 
-3. **Send Message:**
-   ```bash
-   curl -X POST http://localhost:8000/sessions/{session_uuid}/messages \
-     -H "Content-Type: application/json" \
-     -d '{
-       "message": "What is the capital of France?"
-     }'
-   ```
+**Features**:
+- 🌐 **WebSockets**: Real-time bidirectional communication for low-latency chat.
+- 🎨 **Premium UI**: Dark-mode primary design with smooth Framer Motion animations.
+- 📱 **Responsive**: Fully optimized for mobile and desktop browsers.
 
-## API Documentation
+---
 
-Once the server is running, access:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+## 🔌 Connecting to langxchange.ai
 
-## Configuration
+The application connects to the **LangXchange External Chat API**.
 
-All configuration can be set via environment variables:
+### Endpoints used:
+- **Auth**: `POST /exchat/auth/{company_id}/{app_uuid}` (requires `x-api-key`)
+- **Session**: `POST /exchat/{agent_uuid}/{app_uuid}/{user_id}/session`
+- **Streaming (REST)**: `POST /exchat/{agent_uuid}/{app_uuid}/session/{session_uuid}/stream` (SSE)
+- **Real-time (WebSocket)**: `ws://api.langxchange.ai/exchat/ws/{session_uuid}`
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `BASE_URL` | External API base URL | https://api.langxchange.ai |
-| `COMPANY_ID` | Company identifier | demo-company-001 |
-| `APP_UUID` | Application UUID | GMA73HIA1LSQ |
-| `API_KEY` | API key | (configured) |
-| `AGENT_UUID` | Default agent UUID | (configured) |
-| `AUTH_EMAIL` | Authentication email | ext@demo.com |
-| `AUTH_PASSWORD` | Authentication password | (configured) |
-| `DEBUG` | Enable debug mode | false |
+### Security
+All requests require a valid **Bearer Token** obtained via the authentication endpoint. Ensure your `API_KEY` is kept secret and never exposed in public client-side code in production.
 
-## License
+---
 
+## 🏗️ Development
+
+### Local API Proxy (Optional)
+You can run the included FastAPI gateway to provide a simplified REST interface:
+```bash
+cd backend/python
+uvicorn main:app --reload --port 8083
+```
+Documentation: [http://localhost:8083/docs](http://localhost:8083/docs)
+
+---
+
+## 📄 License
 MIT License
