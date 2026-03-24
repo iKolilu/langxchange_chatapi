@@ -10,12 +10,12 @@ class Settings(BaseSettings):
     base_url: str = "https://api.langxchange.ai"
     company_id: str = "demo-company-001"
     app_uuid: str = "GMA73HIA1LSQ"
-    api_key: str = "nv_5fV_hQa6q2OVOExP6ykQxxojYRjAGgzDL6BjMROq8jY"
+    api_key: str = "nv_Uwx3h8PWalTyFAYT_KCNErXrEO_NEgZcMLXcMMa4IbA"
     agent_uuid: str = "f548d5fd-05a7-4d7f-9d31-00b9fedf70b1"
 
     # Internal API authentication credentials
-    auth_email: str = "ext@demo.com"
-    auth_password: str = "p@ssw0rd"
+    auth_email: str = "user1@ges.com"
+    auth_password: str = "p@55w0rd"
 
     # Application settings
     app_name: str = "Chat API Gateway"

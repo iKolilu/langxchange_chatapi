@@ -14,7 +14,7 @@ from typing import Optional
 
 from config import Settings, get_settings
 from models import HealthResponse, CreateSessionRequest, SendMessageRequest, MessageResponse
-from routers import auth_router, sessions_router, messages_router
+from routers import auth_router, sessions_router, messages_router, agents_router
 from services import get_chat_service, ChatServiceClient
 
 # Configure logging
@@ -85,6 +85,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(sessions_router)
 app.include_router(messages_router)
+app.include_router(agents_router)
 
 
 # ============ Root and Health Endpoints ============

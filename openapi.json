@@ -350,6 +350,48 @@
         }
       }
     },
+    "/agents": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "List Agents",
+        "description": "List all available agents for the current application.\n\nReturns a list of agents that can be used for chat sessions.",
+        "operationId": "list_agents_agents_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentsListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to list agents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": [
@@ -457,6 +499,54 @@
   },
   "components": {
     "schemas": {
+      "AgentResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "agent_uuid": {
+            "type": "string",
+            "title": "Agent Uuid"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "agent_uuid"
+        ],
+        "title": "AgentResponse",
+        "description": "Response model for agent information."
+      },
+      "AgentsListResponse": {
+        "properties": {
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/AgentResponse"
+            },
+            "type": "array",
+            "title": "Agents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agents"
+        ],
+        "title": "AgentsListResponse",
+        "description": "Response model for listing agents."
+      },
       "AuthRequest": {
         "properties": {
           "email": {
@@ -879,7 +969,7 @@
       "SessionResponse": {
         "properties": {
           "session_id": {
-            "type": "integer",
+            "type": "string",
             "title": "Session Id"
           },
           "session_uuid": {

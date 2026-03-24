@@ -107,6 +107,18 @@ class HealthResponse(BaseModel):
 
 # ============ Error Models ============
 
+class AgentResponse(BaseModel):
+    """Response model for agent information."""
+    name: str
+    agent_uuid: str
+    description: Optional[str] = ""
+
+
+class AgentsListResponse(BaseModel):
+    """Response model for listing agents."""
+    agents: list[AgentResponse]
+
+
 class ErrorResponse(BaseModel):
     """Error response model."""
     detail: str

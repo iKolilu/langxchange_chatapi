@@ -263,6 +263,28 @@ class ChatServiceClient:
             logger.warning(f"Health check failed: {e}")
             return {"status": "unhealthy", "external_api": "unreachable", "error": str(e)}
 
+    async def list_agents(self) -> Dict[str, Any]:
+        """
+        List all available agents for the current application.
+
+        Returns:
+            List of agents
+        """
+        await self.ensure_authenticated()
+        client = await self._get_client()
+
+        url = f"{self.base_url}/exchat/agents"
+
+        logger.info(f"Fetching agents from {url}")
+
+        response = await client.get(
+            url,
+            headers=self._get_auth_headers()
+        )
+        response.raise_for_status()
+
+        return {"agents": response.json()}
+
 
 # Singleton instance holder
 _chat_service_instance: Optional[ChatServiceClient] = None

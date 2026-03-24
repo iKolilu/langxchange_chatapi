@@ -22,13 +22,13 @@ class SimpleChatCLI:
         # Configuration
         self.company_id = "demo-company-001"
         self.app_uuid = "GMA73HIA1LSQ"
-        self.api_key = "nv_5fV_hQa6q2OVOExP6ykQxxojYRjAGgzDL6BjMROq8jY"
+        self.api_key = "nv_Uwx3h8PWalTyFAYT_KCNErXrEO_NEgZcMLXcMMa4IbA"
         self.agent_uuid = "f548d5fd-05a7-4d7f-9d31-00b9fedf70b1"
-        self.user_id = "ext@demo.com"
+        self.user_id = "user1@ges.com"
         
         # Internal API authentication credentials
-        self.email = "ext@demo.com"
-        self.password = "p@ssw0rd"
+        self.email = "user1@ges.com"
+        self.password = "p@55w0rd"
         
         self.use_agentid_messaging = True  # Use process_message_with_agentid instead of regular messaging
         self.external_chat_mode = True  # Use external chat endpoints vs internal API
