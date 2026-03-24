@@ -28,7 +28,7 @@ class SimpleChatCLI:
         
         # Internal API authentication credentials
         self.email = "ext@demo.com"
-        self.password = "p@ssw0rd"
+        self.password = "pass"
         
         self.use_agentid_messaging = True  # Use process_message_with_agentid instead of regular messaging
         self.external_chat_mode = True  # Use external chat endpoints vs internal API
@@ -227,7 +227,6 @@ class SimpleChatCLI:
             # External chat session creation
             session_data = {
                 "system_prompt": system_prompt,
-                "user_id": user_id,
                 "user_prompt": "Hello, I just started a new chat session.",
                 "use_fileconfig": False,
                 "use_ddbconfig": False,
@@ -339,9 +338,86 @@ class SimpleChatCLI:
                 print(f"   Response: {response.text}")
                 print(f"   URL: {url}")  # Debug info
                 return None
-                
         except Exception as e:
             self.print_error(f"Message sending error: {str(e)}")
+            return None
+                
+    def stream_message(self, message):
+        """Send a message and stream the response"""
+        if not self.session_data:
+            self.print_error("No active session. Please create a session first.")
+            return
+
+        session_uuid = self.session_data['session_uuid']
+        
+        if self.external_chat_mode:
+            url = f"{self.base_url}/exchat/{self.agent_uuid}/{self.app_uuid}/session/{session_uuid}/stream"
+        else:
+            # Internal API doesn't have a direct SSE stream endpoint in this same pattern
+            # but we'll fallback to regular if needed or point to appropriate one
+            self.print_info("Streaming is optimized for External Chat mode. Falling back to regular message.")
+            return self.send_message(message)
+
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream"
+        }
+        message_data = {"message": message}
+
+        try:
+            # Show "Thinking" indicator
+            print("🤖 Agent: ", end="", flush=True)
+            print("Thinking...", end="\r", flush=True)
+            
+            response = requests.post(url, headers=headers, json=message_data, stream=True)
+            
+            if response.status_code != 200:
+                self.print_error(f"Streaming failed: {response.status_code}")
+                print(f"   Response: {response.text}")
+                return
+
+            print(" " * 20, end="\r", flush=True) # Clear thinking
+            
+            full_content = ""
+            metadata = {}
+            for line in response.iter_lines():
+                if line:
+                    decoded_line = line.decode('utf-8')
+                    if decoded_line.startswith('data: '):
+                        data_str = decoded_line[6:]
+                        try:
+                            data = json.loads(data_str)
+                            
+                            # Handle different chunk types
+                            if data.get('type') == 'content' or 'content' in data:
+                                content = data.get('content', '')
+                                print(content, end="", flush=True)
+                                full_content += content
+                            elif data.get('type') == 'message':
+                                # Final chunk often contains metadata
+                                if 'processing_time_ms' in data:
+                                    metadata['processing_time_ms'] = data['processing_time_ms']
+                                if 'tokens' in data:
+                                    metadata['tokens_used'] = data['tokens']
+                            elif data.get('type') == 'error':
+                                print(f"\n❌ Error in stream: {data.get('message')}")
+                            elif 'response' in data: # Final response object
+                                # If we already printed everything, just stop
+                                pass
+                        except json.JSONDecodeError:
+                            pass
+            
+            print() # New line after stream ends
+            
+            # Combine response and metadata
+            result = {"response": full_content}
+            result.update(metadata)
+            return result
+                
+        except Exception as e:
+            print()
+            self.print_error(f"Streaming error: {str(e)}")
             return None
     
     def get_session_status(self):
@@ -424,22 +500,26 @@ class SimpleChatCLI:
                         print("Type /help for available commands.")
                     continue
                 
-                # Send message
+                # Send message (using stream by default if in external mode)
                 processing_method = "agentid" if self.use_agentid_messaging else "standard"
-                print(f"🤖 Agent: [Processing with {processing_method} method using LLM config from {self.agent_uuid}...]")
-                response = self.send_message(user_input)
+                if self.external_chat_mode:
+                    response = self.stream_message(user_input)
+                else:
+                    print(f"🤖 Agent: [Processing with {processing_method} method using LLM config from {self.agent_uuid}...]")
+                    response = self.send_message(user_input)
                 
                 if response:
-                    # Display the main response
-                    if 'response' in response and response['response']:
-                        print(f"🤖 Agent: {response['response']}")
-                    elif 'message' in response:
-                        print(f"🤖 Agent: {response['message']}")
-                    elif response.get('response') == "":
-                        print("🤖 Agent: [Received empty response]")
-                    else:
-                        print(f"🤖 Agent: [Response received]")
-                        print(json.dumps(response, indent=2))
+                    # If it was a regular non-streamed response, we need to print it
+                    if not self.external_chat_mode:
+                        if 'response' in response and response['response']:
+                            print(f"🤖 Agent: {response['response']}")
+                        elif 'message' in response:
+                            print(f"🤖 Agent: {response['message']}")
+                        elif response.get('response') == "":
+                            print("🤖 Agent: [Received empty response]")
+                        else:
+                            print(f"🤖 Agent: [Response received]")
+                            print(json.dumps(response, indent=2))
                     
                     # Display additional metadata if available
                     metadata = []
