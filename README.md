@@ -33,7 +33,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Run the interactive CLI
-python langxchange_examples/simple_chat_cli.py
+python backend/simple_chat_cli.py
 ```
 
 **Features**:
