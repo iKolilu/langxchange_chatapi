@@ -63,6 +63,7 @@ class SessionResponse(BaseModel):
     session_id: str
     session_uuid: str
     agent_name: str
+    agent_uuid: str
     status: Optional[str] = None
     llm_config: Optional[LLMConfig] = None
     configurations_used: Optional[ConfigurationsUsed] = None

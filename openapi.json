@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Chat API Gateway",
-    "description": "\n    A FastAPI backend that provides a clean REST interface for the LangXchange chat service.\n\n    ## Features\n\n    - **Authentication**: Manage authentication with the external chat API\n    - **Sessions**: Create and manage chat sessions with AI agents\n    - **Messages**: Send messages and receive AI responses\n    - **Convenience Endpoint**: Quick chat endpoint for simple interactions\n\n    ## Getting Started\n\n    1. Use `/auth/login` to authenticate (or let the API auto-authenticate)\n    2. Create a session with `/sessions`\n    3. Send messages with `/sessions/{session_uuid}/messages`\n\n    Or use the convenience `/chat` endpoint for quick interactions.\n    ",
+    "description": "\n    A FastAPI backend that provides a clean REST interface for the LangXchange chat service.\n\n    ## Features\n\n    - **Authentication**: Manage authentication with the external chat API\n    - **Sessions**: Create and manage chat sessions with AI agents\n    - **Messages**: Send messages and receive AI responses\n    - **WebSocket**: Real-time chat via WebSocket\n    - **Configuration**: Switch between external/internal modes at runtime\n    - **Convenience Endpoint**: Quick chat endpoint for simple interactions\n\n    ## Getting Started\n\n    1. Use `/auth/login` to authenticate (or let the API auto-authenticate)\n    2. Select an agent with `POST /agents/select?agent_uuid=...`\n    3. Create a session with `POST /sessions`\n    4. Send messages with `POST /sessions/{session_uuid}/messages`\n    5. Or use `POST /chat` for quick stateless interactions\n    6. Or connect via WebSocket at `/ws/chat/{session_uuid}`\n\n    ## Runtime State\n    After selecting an agent and creating a session, all endpoints will\n    automatically use those values \u2014 no need to pass them repeatedly.\n    Check current state with `GET /config/state`.\n    ",
     "version": "1.0.0"
   },
   "paths": {
@@ -94,7 +94,7 @@
           "Sessions"
         ],
         "summary": "Create Session",
-        "description": "Create a new chat session with the AI agent.\n\nThis endpoint initializes a new conversation session with the specified\nconfiguration options.",
+        "description": "Create a new chat session with the AI agent.\n\nagent_uuid is optional \u2014 if not provided, uses the runtime selected agent\n(from POST /agents/select) or falls back to the default in config.",
         "operationId": "create_session_sessions_post",
         "parameters": [
           {
@@ -110,8 +110,10 @@
                   "type": "null"
                 }
               ],
+              "description": "The agent UUID to use for this session",
               "title": "Agent Uuid"
-            }
+            },
+            "description": "The agent UUID to use for this session"
           }
         ],
         "requestBody": {
@@ -174,7 +176,7 @@
           "Sessions"
         ],
         "summary": "Get Session Status",
-        "description": "Get the status of an existing chat session.\n\nReturns detailed information about the session including its current state,\ncreation time, and configuration.",
+        "description": "Get the status of an existing chat session.\n\nBoth agent_uuid and session_uuid fall back to runtime state if not provided.",
         "operationId": "get_session_status_sessions__session_uuid__get",
         "parameters": [
           {
@@ -201,8 +203,10 @@
                   "type": "null"
                 }
               ],
+              "description": "The agent UUID used when creating the session",
               "title": "Agent Uuid"
-            }
+            },
+            "description": "The agent UUID used when creating the session"
           }
         ],
         "responses": {
@@ -392,6 +396,213 @@
         }
       }
     },
+    "/agents/select": {
+      "post": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Select Agent",
+        "description": "Select an agent to use for subsequent requests.\n\nSets the runtime agent UUID \u2014 all endpoints that use agent_uuid\nwill use this value until changed.",
+        "operationId": "select_agent_agents_select_post",
+        "parameters": [
+          {
+            "name": "agent_uuid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The agent UUID to select",
+              "title": "Agent Uuid"
+            },
+            "description": "The agent UUID to select"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Agent not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to select agent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config/mode": {
+      "get": {
+        "tags": [
+          "Configuration"
+        ],
+        "summary": "Get Mode",
+        "description": "Get the current chat mode.",
+        "operationId": "get_mode_config_mode_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatModeResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Configuration"
+        ],
+        "summary": "Switch Mode",
+        "description": "Switch between external and internal chat modes.",
+        "operationId": "switch_mode_config_mode_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatModeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatModeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config/state": {
+      "get": {
+        "tags": [
+          "Configuration"
+        ],
+        "summary": "Get Runtime State",
+        "description": "Get the current runtime state (active agent, session, mode).",
+        "operationId": "get_runtime_state_config_state_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeStateResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Configuration"
+        ],
+        "summary": "Set Runtime State",
+        "description": "Manually override runtime agent UUID and/or session UUID.\n\nUse this to pin a specific agent or session without going through\nthe select agent / create session flow.",
+        "operationId": "set_runtime_state_config_state_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RuntimeStateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeStateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config/info": {
+      "get": {
+        "tags": [
+          "Configuration"
+        ],
+        "summary": "Get Config Info",
+        "description": "Get full configuration \u2014 static config plus current runtime overrides.",
+        "operationId": "get_config_info_config_info_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "tags": [
@@ -418,7 +629,7 @@
           "Health"
         ],
         "summary": "Health Check",
-        "description": "Health check endpoint.\n\nReturns the health status of both this service and the external API.",
+        "description": "Health check endpoint.",
         "operationId": "health_check_health_get",
         "responses": {
           "200": {
@@ -440,7 +651,7 @@
           "Quick Chat"
         ],
         "summary": "Quick chat endpoint",
-        "description": "Convenience endpoint for quick chat interactions.\n\nThis endpoint handles session creation automatically if no session_uuid is provided.\nIdeal for simple, stateless chat interactions.\n\n- If `session_uuid` is provided, sends a message to that existing session\n- If `session_uuid` is not provided, creates a new session first",
+        "description": "Convenience endpoint for quick chat interactions.\n\n- Uses runtime agent UUID (from POST /agents/select) or config fallback\n- Uses runtime session UUID (from POST /sessions) or creates a new one\n- Respects current chat mode (external/internal)\n- If session_uuid is passed in body it takes priority over runtime state",
         "operationId": "quick_chat_chat_post",
         "requestBody": {
           "content": {
@@ -470,26 +681,6 @@
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/config/info": {
-      "get": {
-        "tags": [
-          "Configuration"
-        ],
-        "summary": "Get Config Info",
-        "description": "Get non-sensitive configuration information.\n\nReturns the current configuration settings (excluding sensitive data).",
-        "operationId": "get_config_info_config_info_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
               }
             }
           }
@@ -606,6 +797,45 @@
         ],
         "title": "AuthResponse",
         "description": "Authentication response model."
+      },
+      "ChatModeRequest": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "external",
+              "internal"
+            ],
+            "title": "Mode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "title": "ChatModeRequest"
+      },
+      "ChatModeResponse": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "external",
+              "internal"
+            ],
+            "title": "Mode"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode",
+          "message"
+        ],
+        "title": "ChatModeResponse"
       },
       "ConfigurationsUsed": {
         "properties": {
@@ -951,6 +1181,68 @@
         "title": "QuickChatResponse",
         "description": "Quick chat response model."
       },
+      "RuntimeStateRequest": {
+        "properties": {
+          "agent_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Uuid"
+          },
+          "session_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Uuid"
+          }
+        },
+        "type": "object",
+        "title": "RuntimeStateRequest"
+      },
+      "RuntimeStateResponse": {
+        "properties": {
+          "agent_uuid": {
+            "type": "string",
+            "title": "Agent Uuid"
+          },
+          "session_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Uuid"
+          },
+          "chat_mode": {
+            "type": "string",
+            "enum": [
+              "external",
+              "internal"
+            ],
+            "title": "Chat Mode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_uuid",
+          "session_uuid",
+          "chat_mode"
+        ],
+        "title": "RuntimeStateResponse"
+      },
       "SendMessageRequest": {
         "properties": {
           "message": {
@@ -979,6 +1271,10 @@
           "agent_name": {
             "type": "string",
             "title": "Agent Name"
+          },
+          "agent_uuid": {
+            "type": "string",
+            "title": "Agent Uuid"
           },
           "status": {
             "anyOf": [
@@ -1040,7 +1336,8 @@
         "required": [
           "session_id",
           "session_uuid",
-          "agent_name"
+          "agent_name",
+          "agent_uuid"
         ],
         "title": "SessionResponse",
         "description": "Response model for session operations."

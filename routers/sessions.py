@@ -1,7 +1,10 @@
 """Session management routes."""
-from fastapi import APIRouter, Depends, HTTPException, status, Path
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Query
 from httpx import HTTPStatusError
 from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 from models import (
     CreateSessionRequest,
@@ -9,7 +12,7 @@ from models import (
     SessionStatusResponse,
     ErrorResponse
 )
-from config import Settings, get_settings
+from config import Settings, get_settings, get_agent_uuid, set_session_uuid, get_session_uuid
 from services import get_chat_service, ChatServiceClient
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
@@ -31,15 +34,19 @@ def get_service(settings: Settings = Depends(get_settings)) -> ChatServiceClient
 )
 async def create_session(
     request: CreateSessionRequest,
-    agent_uuid: Optional[str] = None,
+    # agent_uuid is now optional — falls back to runtime state then config
+    agent_uuid: Optional[str] = Query(None, description="The agent UUID to use for this session"),
+    settings: Settings = Depends(get_settings),
     service: ChatServiceClient = Depends(get_service)
 ):
     """
     Create a new chat session with the AI agent.
 
-    This endpoint initializes a new conversation session with the specified
-    configuration options.
+    agent_uuid is optional — if not provided, uses the runtime selected agent
+    (from POST /agents/select) or falls back to the default in config.
     """
+    resolved_agent = agent_uuid or get_agent_uuid(settings)
+
     try:
         result = await service.create_session(
             user_id=request.user_id,
@@ -50,8 +57,15 @@ async def create_session(
             use_vectorconfig=request.use_vectorconfig,
             use_mcpconfig=request.use_mcpconfig,
             use_remote_storage=request.use_remote_storage,
-            agent_uuid=agent_uuid
+            agent_uuid=resolved_agent
         )
+
+        # Store session UUID in runtime state automatically
+        session_uuid = result.get("session_uuid")
+        if session_uuid:
+            set_session_uuid(session_uuid)
+            logger.info(f"Runtime session UUID updated to {session_uuid}")
+
         return SessionResponse(**result)
     except HTTPStatusError as e:
         if e.response.status_code == 401:
@@ -80,20 +94,30 @@ async def create_session(
 )
 async def get_session_status(
     session_uuid: str = Path(..., description="The session UUID"),
-    agent_uuid: Optional[str] = None,
+    # agent_uuid now optional — falls back to runtime state then config
+    agent_uuid: Optional[str] = Query(None, description="The agent UUID used when creating the session"),
+    settings: Settings = Depends(get_settings),
     service: ChatServiceClient = Depends(get_service)
 ):
     """
     Get the status of an existing chat session.
 
-    Returns detailed information about the session including its current state,
-    creation time, and configuration.
+    Both agent_uuid and session_uuid fall back to runtime state if not provided.
     """
+    resolved_agent = agent_uuid or get_agent_uuid(settings)
+
     try:
         result = await service.get_session_status(
             session_uuid=session_uuid,
-            agent_uuid=agent_uuid
+            agent_uuid=resolved_agent
         )
+        logger.info(f"Session status raw response: {result}")
+
+        if hasattr(result, "model_dump"):
+            result = result.model_dump()
+        elif hasattr(result, "dict"):
+            result = result.dict()
+
         return SessionStatusResponse(
             session_uuid=session_uuid,
             status=result.get("status", "unknown"),
@@ -103,16 +127,13 @@ async def get_session_status(
         )
     except HTTPStatusError as e:
         if e.response.status_code == 404:
+            raise HTTPException(status_code=404, detail=f"Session {session_uuid} not found")
+        if e.response.status_code == 500:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Session {session_uuid} not found"
+                status_code=503,
+                detail="Session status unavailable - upstream API error"
             )
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=500,
             detail=f"Failed to get session status: {e.response.text}"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get session status: {str(e)}"
-        )
+        ) from e
