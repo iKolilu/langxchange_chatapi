@@ -1,7 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --primary: #1E3A8A;
+  --primary-light: #2563EB;
+  --primary-dark: #0F2557;
+  --gold: #D4A843;
+  --gold-light: #F5E6C8;
+  --bg: #F0F4F8;
+  --text: #0F172A;
+  --text-secondary: #475569;
+  --shadow-color: rgba(15, 37, 87, 0.08);
+}
 
 body {
   margin: 0;
@@ -10,9 +22,15 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg);
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Smooth scrolling */
+* {
+  scroll-behavior: smooth;
 }

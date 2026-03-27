@@ -2,70 +2,157 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="./favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#2563EB" />
+    <link rel="icon" href="./logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#0F2557" />
     <meta
       name="description"
-      content="PLC Mobile App - Professional Learning Community platform for teachers"
+      content="GES PLC Toolkit - Professional Learning Community platform for Ghanaian teachers"
     />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     
     <!-- Apple Web App -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="PLC App">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GES PLC">
     
     <!-- Preload fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <title>PLC Mobile App</title>
+    <title>GES PLC Toolkit</title>
     
     <style>
-      /* Loading screen */
+      /* ── Premium Loading Screen ── */
       .loading-screen {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: #F9FAFB;
+        background: linear-gradient(145deg, #0F2557 0%, #1E3A8A 50%, #0F2557 100%);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         z-index: 9999;
+        transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
       }
-      
-      .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 4px solid #E5E7EB;
-        border-top: 4px solid #2563EB;
+
+      .loading-logo-container {
+        position: relative;
+        width: 100px;
+        height: 100px;
+        margin-bottom: 32px;
+      }
+
+      .loading-logo {
+        width: 80px;
+        height: 80px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 20px;
+        object-fit: contain;
+        z-index: 2;
+        animation: logoFloat 2.5s ease-in-out infinite;
+      }
+
+      .loading-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
-        animation: spin 1s linear infinite;
+        border: 3px solid rgba(212, 168, 67, 0.15);
+        border-top: 3px solid #D4A843;
+        animation: spin 1.2s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+        z-index: 1;
       }
-      
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+
+      .loading-ring-outer {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 2px solid rgba(37, 99, 235, 0.1);
+        border-bottom: 2px solid rgba(37, 99, 235, 0.4);
+        animation: spin 2s linear infinite reverse;
+        z-index: 0;
       }
-      
-      .loading-text {
-        margin-top: 16px;
-        color: #6B7280;
+
+      .loading-title {
+        font-family: 'Outfit', 'Inter', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: #FFFFFF;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+      }
+
+      .loading-subtitle {
         font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.5);
+        letter-spacing: 0.5px;
+      }
+
+      .loading-dots {
+        display: flex;
+        gap: 6px;
+        margin-top: 32px;
+      }
+
+      .loading-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: rgba(212, 168, 67, 0.4);
+        animation: dotPulse 1.4s ease-in-out infinite;
+      }
+
+      .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+      .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+      @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+
+      @keyframes logoFloat {
+        0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+        50% { transform: translate(-50%, -50%) translateY(-6px); }
+      }
+
+      @keyframes dotPulse {
+        0%, 80%, 100% { background: rgba(212, 168, 67, 0.25); transform: scale(0.8); }
+        40% { background: #D4A843; transform: scale(1.2); }
       }
     </style>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     
-    <!-- Loading screen -->
+    <!-- Premium Loading Screen -->
     <div id="loading-screen" class="loading-screen">
-      <div class="loading-spinner"></div>
-      <div class="loading-text">Loading PLC App...</div>
+      <div class="loading-logo-container">
+        <div class="loading-ring-outer"></div>
+        <div class="loading-ring"></div>
+        <img src="./logo.png" alt="GES PLC" class="loading-logo" />
+      </div>
+      <div class="loading-title">GES PLC Toolkit</div>
+      <div class="loading-subtitle">Professional Learning Community</div>
+      <div class="loading-dots">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+      </div>
     </div>
     
     <div id="root"></div>
@@ -77,12 +164,11 @@
           const loadingScreen = document.getElementById('loading-screen');
           if (loadingScreen) {
             loadingScreen.style.opacity = '0';
-            loadingScreen.style.transition = 'opacity 0.5s ease';
             setTimeout(function() {
               loadingScreen.style.display = 'none';
-            }, 500);
+            }, 600);
           }
-        }, 1000);
+        }, 1200);
       });
     </script>
   </body>

@@ -17,18 +17,19 @@ const Settings = () => {
 
     const SettingItem = ({ icon: Icon, label, onPress, value }) => (
         <TouchableOpacity
-            style={[styles.item, { borderBottomColor: colors.border }]}
+            style={[styles.item, { borderBottomColor: colors.borderLight }]}
             onPress={onPress}
+            activeOpacity={0.7}
         >
             <View style={styles.itemLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: colors.background }]}>
-                    <Icon size={20} color={colors.primary} />
+                <View style={[styles.iconContainer, { backgroundColor: colors.primarySurface }]}>
+                    <Icon size={18} color={colors.primary} />
                 </View>
                 <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
             </View>
             <View style={styles.itemRight}>
                 {value && <Text style={[styles.value, { color: colors.textSecondary }]}>{value}</Text>}
-                <ChevronRight size={20} color={colors.textMuted} />
+                <ChevronRight size={18} color={colors.textMuted} />
             </View>
         </TouchableOpacity>
     );
@@ -43,10 +44,15 @@ const Settings = () => {
                         backgroundColor: isActive ? colors.primary : colors.background,
                         borderColor: isActive ? colors.primary : colors.border,
                     },
+                    isActive && Platform.select({
+                        ios: { shadowColor: colors.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8 },
+                        web: { boxShadow: `0 3px 12px rgba(30, 58, 138, 0.3)` },
+                    }),
                 ]}
                 onPress={() => setThemeMode(mode)}
+                activeOpacity={0.7}
             >
-                <Icon size={20} color={isActive ? '#FFFFFF' : colors.textSecondary} />
+                <Icon size={18} color={isActive ? '#FFFFFF' : colors.textSecondary} />
                 <Text style={[styles.themeLabel, { color: isActive ? '#FFFFFF' : colors.text }]}>
                     {label}
                 </Text>
@@ -57,7 +63,7 @@ const Settings = () => {
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <ScrollView contentContainerStyle={styles.content} scrollEnabled={Platform.OS !== 'web'}>
-                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>ACCOUNT</Text>
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ACCOUNT</Text>
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     <SettingItem
                         icon={User}
@@ -76,7 +82,7 @@ const Settings = () => {
                     />
                 </View>
 
-                <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: spacing.lg }]}>
+                <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: spacing.lg }]}>
                     APPEARANCE
                 </Text>
                 <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, padding: spacing.md }]}>
@@ -90,6 +96,7 @@ const Settings = () => {
                 <TouchableOpacity
                     style={[styles.logoutButton, { marginTop: spacing.xl }]}
                     onPress={handleLogout}
+                    activeOpacity={0.8}
                 >
                     <Text style={styles.logoutText}>Logout</Text>
                 </TouchableOpacity>
@@ -99,22 +106,24 @@ const Settings = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    content: {
-        padding: 16,
-    },
+    container: { flex: 1 },
+    content: { padding: 16, paddingBottom: 32 },
     sectionTitle: {
-        fontSize: 12,
-        fontWeight: '600',
-        marginBottom: 8,
+        fontSize: 11,
+        fontWeight: '700',
+        marginBottom: 10,
         marginLeft: 4,
+        letterSpacing: 1,
     },
     card: {
-        borderRadius: 12,
+        borderRadius: 14,
         borderWidth: 1,
         overflow: 'hidden',
+        ...Platform.select({
+            ios: { shadowColor: '#0F2557', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10 },
+            android: { elevation: 3 },
+            web: { boxShadow: '0 4px 16px rgba(15, 37, 87, 0.06)' },
+        }),
     },
     item: {
         flexDirection: 'row',
@@ -128,15 +137,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     iconContainer: {
-        width: 32,
-        height: 32,
-        borderRadius: 8,
+        width: 34,
+        height: 34,
+        borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
     },
     label: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '500',
     },
     itemRight: {
@@ -144,37 +153,43 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     value: {
-        fontSize: 14,
+        fontSize: 13,
         marginRight: 8,
     },
     themeContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        gap: 8,
     },
     themeOption: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 12,
-        marginHorizontal: 4,
-        borderRadius: 8,
-        borderWidth: 1,
+        paddingVertical: 14,
+        borderRadius: 12,
+        borderWidth: 1.5,
     },
     themeLabel: {
         fontSize: 12,
-        marginTop: 4,
+        marginTop: 5,
         fontWeight: '600',
     },
     logoutButton: {
-        backgroundColor: '#EF4444',
         padding: 16,
-        borderRadius: 12,
+        borderRadius: 14,
         alignItems: 'center',
+        backgroundColor: '#DC2626',
+        ...Platform.select({
+            ios: { shadowColor: '#DC2626', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+            android: { elevation: 6 },
+            web: { boxShadow: '0 4px 16px rgba(220, 38, 38, 0.3)', cursor: 'pointer', transition: 'transform 0.15s ease' },
+        }),
     },
     logoutText: {
         color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 15,
+        fontWeight: '700',
+        letterSpacing: 0.3,
     },
 });
 

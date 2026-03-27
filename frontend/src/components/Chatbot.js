@@ -31,17 +31,17 @@ const AgentDetailsBanner = ({ service, isOpen, onToggle }) => {
         <View style={styles.agentBanner}>
             <TouchableOpacity style={styles.agentBannerHeader} onPress={onToggle} activeOpacity={0.7}>
                 <View style={styles.agentBannerLeft}>
-                    <Server size={14} color="#3B82F6" />
+                    <Server size={14} color="#1E3A8A" />
                     <Text style={styles.agentBannerTitle}>
                         {service.provider}
                     </Text>
                     <View style={[
                         styles.agentStatusDot,
-                        { backgroundColor: service.isAuthenticated ? '#10B981' : '#EF4444' }
+                        { backgroundColor: service.isAuthenticated ? '#059669' : '#DC2626' }
                     ]} />
                     <Text style={[
                         styles.agentStatusText,
-                        { color: service.isAuthenticated ? '#10B981' : '#EF4444' }
+                        { color: service.isAuthenticated ? '#059669' : '#DC2626' }
                     ]}>
                         {service.isAuthenticated ? 'Active' : 'Offline'}
                     </Text>
@@ -506,12 +506,12 @@ const Chatbot = ({ isOpen, onClose, initialParams, inline = false }) => {
                         onPress={() => setShowServiceMenu(!showServiceMenu)}
                         activeOpacity={0.7}
                     >
-                        <Bot size={20} color="#3B82F6" />
+                        <Bot size={20} color="#1E3A8A" />
                         <Text style={styles.title}>AI Assistant</Text>
                         <Settings size={14} color="#6B7280" style={{ marginLeft: 4 }} />
                         <View style={[
                             styles.statusDot,
-                            { backgroundColor: activeService?.isAuthenticated ? '#10B981' : '#EF4444' }
+                            { backgroundColor: activeService?.isAuthenticated ? '#059669' : '#DC2626' }
                         ]} />
                     </TouchableOpacity>
                     <Text style={styles.subtitle} numberOfLines={1}>
@@ -523,7 +523,7 @@ const Chatbot = ({ isOpen, onClose, initialParams, inline = false }) => {
                         onPress={() => setShowAgentDetails(!showAgentDetails)}
                         style={[styles.agentInfoBtn, showAgentDetails && styles.agentInfoBtnActive]}
                     >
-                        <Server size={16} color={showAgentDetails ? '#3B82F6' : '#6B7280'} />
+                        <Server size={16} color={showAgentDetails ? '#1E3A8A' : '#94A3B8'} />
                     </TouchableOpacity>
                     {!inline && (
                         <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -547,7 +547,7 @@ const Chatbot = ({ isOpen, onClose, initialParams, inline = false }) => {
                             onPress={() => handleServiceSwitch(s)}
                         >
                             <View style={styles.menuItemMain}>
-                                <Server size={14} color={activeService?.id === s.id ? '#3B82F6' : '#6B7280'} />
+                                <Server size={14} color={activeService?.id === s.id ? '#1E3A8A' : '#94A3B8'} />
                                 <Text style={[
                                     styles.menuItemText,
                                     activeService?.id === s.id && styles.menuItemTextActive
@@ -557,7 +557,7 @@ const Chatbot = ({ isOpen, onClose, initialParams, inline = false }) => {
                             </View>
                             <View style={[
                                 styles.agentStatusDot,
-                                { backgroundColor: s.isAuthenticated ? '#10B981' : '#EF4444' }
+                                { backgroundColor: s.isAuthenticated ? '#059669' : '#DC2626' }
                             ]} />
                         </TouchableOpacity>
                     ))}
@@ -594,7 +594,7 @@ const Chatbot = ({ isOpen, onClose, initialParams, inline = false }) => {
                             <Bot size={15} color="#fff" />
                         </View>
                         <View style={styles.typingBubble}>
-                            <ActivityIndicator size="small" color="#3B82F6" />
+                            <ActivityIndicator size="small" color="#1E3A8A" />
                             <Text style={styles.typingText}>AI is thinking…</Text>
                         </View>
                     </View>
@@ -663,28 +663,28 @@ const Chatbot = ({ isOpen, onClose, initialParams, inline = false }) => {
 const markdownStyles = StyleSheet.create({
     body: { color: '#1F2937', fontSize: 15, lineHeight: 22 },
     paragraph: { marginBottom: 8 },
-    strong: { fontWeight: '700', color: '#111827' },
-    link: { color: '#3B82F6', textDecorationLine: 'underline' },
+    strong: { fontWeight: '700', color: '#0F172A' },
+    link: { color: '#1E3A8A', textDecorationLine: 'underline' },
     list_item: { marginBottom: 4 },
     bullet_list: { marginBottom: 12 },
     ordered_list: { marginBottom: 12 },
     code_inline: {
-        backgroundColor: '#F3F4F6',
-        paddingHorizontal: 4,
+        backgroundColor: '#F1F5F9',
+        paddingHorizontal: 5,
         borderRadius: 4,
         fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
         fontSize: 13,
     },
     code_block: {
-        backgroundColor: '#F3F4F6',
-        padding: 12,
-        borderRadius: 8,
+        backgroundColor: '#F1F5F9',
+        padding: 14,
+        borderRadius: 10,
         marginVertical: 8,
     },
     fence: {
-        backgroundColor: '#F3F4F6',
-        padding: 12,
-        borderRadius: 8,
+        backgroundColor: '#F1F5F9',
+        padding: 14,
+        borderRadius: 10,
         marginVertical: 8,
     },
 });
@@ -698,7 +698,7 @@ const userMarkdownStyles = StyleSheet.create({
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#F0F4F8',
     },
     // ── Header ──
     header: {
@@ -709,8 +709,13 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         backgroundColor: '#fff',
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
+        borderBottomColor: '#E2E8F0',
         zIndex: 50,
+        ...Platform.select({
+            web: { boxShadow: '0 2px 12px rgba(15, 37, 87, 0.06)' },
+            ios: { shadowColor: '#0F2557', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+            android: { elevation: 4 },
+        }),
     },
     headerLeft: { flex: 1, marginRight: 12 },
     titleRow: {
@@ -719,9 +724,9 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     title: {
-        fontSize: 17,
-        fontWeight: '700',
-        color: '#111827',
+        fontSize: 16,
+        fontWeight: '800',
+        color: '#0F172A',
     },
     statusDot: {
         width: 8,
@@ -731,7 +736,7 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         fontSize: 11,
-        color: '#6B7280',
+        color: '#64748B',
         marginTop: 2,
         marginLeft: 28,
     },
@@ -742,8 +747,8 @@ const styles = StyleSheet.create({
     },
     agentInfoBtn: {
         padding: 8,
-        borderRadius: 8,
-        backgroundColor: '#F3F4F6',
+        borderRadius: 10,
+        backgroundColor: '#F1F5F9',
     },
     agentInfoBtnActive: {
         backgroundColor: '#EFF6FF',
@@ -799,8 +804,8 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     menuItemTextActive: {
-        color: '#3B82F6',
-        fontWeight: '600',
+        color: '#1E3A8A',
+        fontWeight: '700',
     },
     // ── Agent Banner ──
     agentBanner: {
@@ -823,7 +828,7 @@ const styles = StyleSheet.create({
     agentBannerTitle: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#374151',
+        color: '#334155',
     },
     agentStatusDot: {
         width: 7,
@@ -837,7 +842,7 @@ const styles = StyleSheet.create({
     agentDetails: {
         paddingHorizontal: 16,
         paddingBottom: 12,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#F8FAFC',
         gap: 6,
     },
     detailRow: {
@@ -848,7 +853,7 @@ const styles = StyleSheet.create({
     detailLabel: {
         fontSize: 11,
         fontWeight: '600',
-        color: '#6B7280',
+        color: '#64748B',
         width: 60,
     },
     detailValue: {
@@ -880,29 +885,37 @@ const styles = StyleSheet.create({
     avatar: {
         width: 30,
         height: 30,
-        borderRadius: 15,
-        backgroundColor: '#3B82F6',
+        borderRadius: 12,
+        backgroundColor: '#1E3A8A',
         alignItems: 'center',
         justifyContent: 'center',
         marginHorizontal: 8,
         flexShrink: 0,
     },
-    userAvatar: { backgroundColor: '#6366F1' },
+    userAvatar: { backgroundColor: '#0F2557' },
     messageBubble: {
         maxWidth: Platform.OS === 'web' ? '85%' : '80%',
-        padding: 12,
-        borderRadius: 18,
+        padding: 14,
+        borderRadius: 16,
     },
 
     userBubble: {
-        backgroundColor: '#3B82F6',
+        backgroundColor: '#1E3A8A',
         borderBottomRightRadius: 4,
+        ...Platform.select({
+            ios: { shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 8 },
+            web: { boxShadow: '0 3px 12px rgba(30, 58, 138, 0.2)' },
+        }),
     },
     botBubble: {
         backgroundColor: '#fff',
         borderBottomLeftRadius: 4,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: '#E2E8F0',
+        ...Platform.select({
+            ios: { shadowColor: '#0F2557', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
+            web: { boxShadow: '0 2px 8px rgba(15, 37, 87, 0.04)' },
+        }),
     },
     errorBubble: {
         borderColor: '#FCA5A5',
@@ -958,10 +971,13 @@ const styles = StyleSheet.create({
     inputArea: {
         backgroundColor: '#fff',
         borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
-        paddingTop: 8,
-        paddingHorizontal: 12,
-        paddingBottom: Platform.OS === 'ios' ? 4 : 12,
+        borderTopColor: '#E2E8F0',
+        paddingTop: 10,
+        paddingHorizontal: 14,
+        paddingBottom: Platform.OS === 'ios' ? 4 : 14,
+        ...Platform.select({
+            web: { boxShadow: '0 -2px 12px rgba(15, 37, 87, 0.04)' },
+        }),
     },
     offlineBanner: {
         flexDirection: 'row',
@@ -986,13 +1002,15 @@ const styles = StyleSheet.create({
     },
     input: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#F1F5F9',
         borderRadius: 22,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 18,
+        paddingVertical: 11,
         maxHeight: 120,
         fontSize: 15,
-        color: '#111827',
+        color: '#0F172A',
+        borderWidth: 1.5,
+        borderColor: '#E2E8F0',
     },
     inputDisabled: {
         opacity: 0.5,
@@ -1001,13 +1019,21 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#3B82F6',
+        backgroundColor: '#1E3A8A',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
+        ...Platform.select({
+            ios: { shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8 },
+            web: { boxShadow: '0 3px 12px rgba(30, 58, 138, 0.3)' },
+        }),
     },
     sendBtnDisabled: {
-        backgroundColor: '#93C5FD',
+        backgroundColor: '#93B5E8',
+        ...Platform.select({
+            ios: { shadowOpacity: 0 },
+            web: { boxShadow: 'none' },
+        }),
     },
     // ── Sources ──
     sourcesContainer: {
