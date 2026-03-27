@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
     StyleSheet,
     View,
@@ -11,11 +11,10 @@ import {
     SafeAreaView,
     Platform
 } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react-native';
+import { Clock, CheckCircle, XCircle } from 'lucide-react-native';
 
-// ─── Sample Activity Data (Following november_mobile schema) ────────────────
+// ─── SAME DATA ───────────────────────────────────────────────
 const INITIAL_ACTIVITIES = [
     {
         id: 'act-1',
@@ -40,7 +39,7 @@ const INITIAL_ACTIVITIES = [
         action_uuid: 'uuid-3',
         type: 'AGENT ACTION',
         tool_name: 'read_document',
-        description: 'Analyzing "GES_Teaching_Standards.pdf" for compliance check.',
+        description: 'Analyzing GES Teaching Standards for compliance check.',
         status: 'Completed',
         created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
     },
@@ -49,98 +48,150 @@ const INITIAL_ACTIVITIES = [
         action_uuid: 'uuid-4',
         type: 'AGENT ACTION',
         tool_name: 'send_email',
-        description: 'Drafting weekly PLC summary report for Shama District.',
+        description: 'Drafting weekly PLC summary report.',
         status: 'Declined',
         created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
     }
 ];
 
-const STATUS_STYLES = {
-    New: { color: '#D97706', bg: '#FFFBEB', icon: Clock },
-    Approved: { color: '#1E3A8A', bg: '#EFF6FF', icon: CheckCircle },
-    Completed: { color: '#059669', bg: '#ECFDF5', icon: CheckCircle },
-    Declined: { color: '#DC2626', bg: '#FEF2F2', icon: XCircle },
+// ─── HELPERS ────────────────────────────────────────────────
+const formatTime = (date) => {
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return 'Yesterday';
 };
 
+const formatToolName = (name) =>
+    name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+// ─── STATUS CONFIG ──────────────────────────────────────────
+const STATUS_CONFIG = {
+    New: { icon: Clock, color: '#D97706' },
+    Approved: { icon: CheckCircle, color: '#1E3A8A' },
+    Completed: { icon: CheckCircle, color: '#059669' },
+    Declined: { icon: XCircle, color: '#DC2626' },
+};
+
+// ─── COMPONENT ──────────────────────────────────────────────
 const Activity = () => {
-    const { currentUser } = useAuth();
     const { theme } = useTheme();
-    const { colors, spacing } = theme;
+    const { colors } = theme;
 
     const [activities, setActivities] = useState(INITIAL_ACTIVITIES);
-    const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [processingId, setProcessingId] = useState(null);
 
-    const onRefresh = () => {
+    const onRefresh = useCallback(() => {
         setRefreshing(true);
         setTimeout(() => setRefreshing(false), 800);
-    };
+    }, []);
 
-    const handleUpdateStatus = (actionUuid, status) => {
-        setProcessingId(actionUuid);
+    // ─── SPLIT DATA ─────────────────────────────────────────
+    const { pending, others } = useMemo(() => {
+        const sorted = [...activities].sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+
+        return {
+            pending: sorted.filter(a => a.status === 'New'),
+            others: sorted.filter(a => a.status !== 'New'),
+        };
+    }, [activities]);
+
+    // ─── COUNTS ─────────────────────────────────────────────
+    const counts = useMemo(() => {
+        return {
+            pending: activities.filter(a => a.status === 'New').length,
+            approved: activities.filter(a => a.status === 'Approved').length,
+            completed: activities.filter(a => a.status === 'Completed').length,
+            declined: activities.filter(a => a.status === 'Declined').length,
+        };
+    }, [activities]);
+
+    // ─── ACTION HANDLER ─────────────────────────────────────
+    const handleUpdateStatus = (id, status) => {
+        setProcessingId(id);
         setTimeout(() => {
-            setActivities(prev => prev.map(item =>
-                item.action_uuid === actionUuid ? { ...item, status } : item
-            ));
+            setActivities(prev =>
+                prev.map(a =>
+                    a.action_uuid === id ? { ...a, status } : a
+                )
+            );
             setProcessingId(null);
-            if (status === 'Approved') {
-                Alert.alert('Success', 'Action approved successfully.');
-            }
-        }, 600);
+        }, 500);
     };
 
-    const renderActivity = ({ item }) => {
-        const statusStyle = STATUS_STYLES[item.status] || STATUS_STYLES.New;
-        const StatusIcon = statusStyle.icon;
+    // ─── SUMMARY CARD ───────────────────────────────────────
+    const SummaryCard = ({ label, count }) => (
+        <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.summaryCount, { color: colors.text }]}>{count}</Text>
+            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>{label}</Text>
+        </View>
+    );
+
+    // ─── PRIORITY CARD (NEW) ────────────────────────────────
+    const PriorityCard = ({ item }) => {
+        const isProcessing = processingId === item.action_uuid;
 
         return (
-            <View style={[styles.activityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                {/* Left accent bar */}
-                <View style={[styles.accentBar, { backgroundColor: statusStyle.color }]} />
+            <View style={[styles.priorityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.toolName, { color: colors.text }]}>
+                    {formatToolName(item.tool_name)}
+                </Text>
 
-                <View style={styles.activityRow}>
-                    <View style={[styles.typeBadge, { backgroundColor: colors.primarySurface }]}>
-                        <Text style={[styles.typeText, { color: colors.primary }]}>{item.type}</Text>
-                    </View>
-                    <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                        <StatusIcon size={10} color={statusStyle.color} />
-                        <Text style={[styles.statusText, { color: statusStyle.color }]}>
-                            {item.status.toUpperCase()}
-                        </Text>
-                    </View>
+                <Text style={[styles.description, { color: colors.textSecondary }]}>
+                    {item.description}
+                </Text>
+
+                <View style={styles.actions}>
+                    <TouchableOpacity
+                        style={[styles.secondaryBtn]}
+                        onPress={() => handleUpdateStatus(item.action_uuid, 'Declined')}
+                        disabled={isProcessing}
+                    >
+                        <Text style={{ color: colors.textSecondary }}>Decline</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
+                        onPress={() => handleUpdateStatus(item.action_uuid, 'Approved')}
+                        disabled={isProcessing}
+                    >
+                        {isProcessing ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                            <Text style={{ color: '#fff', fontWeight: '600' }}>Approve</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    };
+
+    // ─── TIMELINE ROW ──────────────────────────────────────
+    const TimelineRow = ({ item }) => {
+        const config = STATUS_CONFIG[item.status];
+        const Icon = config.icon;
+
+        return (
+            <View style={[styles.row, { borderBottomColor: colors.border }]}>
+                <Icon size={16} color={config.color} />
+
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={[styles.rowTitle, { color: colors.text }]}>
+                        {formatToolName(item.tool_name)}
+                    </Text>
+                    <Text style={[styles.rowDesc, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {item.description}
+                    </Text>
                 </View>
 
-                <Text style={[styles.actionTitle, { color: colors.text }]}>{item.tool_name}</Text>
-                <Text style={[styles.details, { color: colors.textSecondary }]}>{item.description}</Text>
-
-                {item.status === 'New' && (
-                    <View style={styles.actionButtons}>
-                        <TouchableOpacity
-                            style={[styles.button, styles.declineButton]}
-                            onPress={() => handleUpdateStatus(item.action_uuid, 'Declined')}
-                            disabled={processingId === item.action_uuid}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={[styles.buttonText, { color: '#DC2626' }]}>Decline</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.button, styles.approveButton]}
-                            onPress={() => handleUpdateStatus(item.action_uuid, 'Approved')}
-                            disabled={processingId === item.action_uuid}
-                            activeOpacity={0.8}
-                        >
-                            {processingId === item.action_uuid ? (
-                                <ActivityIndicator size="small" color="#FFFFFF" />
-                            ) : (
-                                <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>Approve</Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                <Text style={[styles.timestamp, { color: colors.textMuted }]}>
-                    {new Date(item.created_at).toLocaleString()}
+                <Text style={[styles.rowTime, { color: colors.textMuted }]}>
+                    {formatTime(item.created_at)}
                 </Text>
             </View>
         );
@@ -148,137 +199,140 @@ const Activity = () => {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            {loading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                </View>
-            ) : (
-                <FlatList
-                    data={activities}
-                    keyExtractor={(item) => item.id}
-                    renderItem={renderActivity}
-                    contentContainerStyle={styles.listContent}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
-                    }
-                    ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-                                No recent activity.
-                            </Text>
+            <FlatList
+                data={[{ key: 'content' }]}
+                renderItem={() => (
+                    <View style={{ padding: 16 }}>
+
+                        {/* HEADER */}
+                        <Text style={[styles.title, { color: colors.text }]}>
+                            Activity
+                        </Text>
+                        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+                            Monitor and manage AI actions
+                        </Text>
+
+                        {/* SUMMARY */}
+                        <View style={styles.summaryRow}>
+                            <SummaryCard label="Pending" count={counts.pending} />
+                            <SummaryCard label="Approved" count={counts.approved} />
+                            <SummaryCard label="Completed" count={counts.completed} />
+                            <SummaryCard label="Declined" count={counts.declined} />
                         </View>
-                    }
-                />
-            )}
+
+                        {/* PRIORITY */}
+                        {pending.length > 0 && (
+                            <>
+                                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+                                    Requires Attention
+                                </Text>
+                                {pending.map(item => (
+                                    <PriorityCard key={item.id} item={item} />
+                                ))}
+                            </>
+                        )}
+
+                        {/* TIMELINE */}
+                        <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 20 }]}>
+                            Recent Activity
+                        </Text>
+
+                        {others.map(item => (
+                            <TimelineRow key={item.id} item={item} />
+                        ))}
+
+                        {activities.length === 0 && (
+                            <View style={styles.empty}>
+                                <Text style={{ color: colors.textMuted }}>
+                                    No activity yet
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                )}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
+                }
+            />
         </SafeAreaView>
     );
 };
 
+// ─── STYLES ────────────────────────────────────────────────
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    listContent: { padding: 16, paddingBottom: 32 },
-    activityCard: {
-        marginBottom: 14,
-        padding: 16,
-        paddingLeft: 20,
-        borderRadius: 14,
-        borderWidth: 1,
-        overflow: 'hidden',
-        position: 'relative',
-        ...Platform.select({
-            ios: { shadowColor: '#0F2557', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10 },
-            android: { elevation: 3 },
-            web: { boxShadow: '0 4px 16px rgba(15, 37, 87, 0.06)' }
-        })
-    },
-    accentBar: {
-        position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
-    },
-    activityRow: {
+
+    title: { fontSize: 20, fontWeight: '800' },
+    subtitle: { fontSize: 13, marginBottom: 14 },
+
+    summaryRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 20,
+        gap: 8,
     },
-    typeBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 6,
-    },
-    typeText: {
-        fontSize: 10,
-        fontWeight: '800',
-        letterSpacing: 0.3,
-    },
-    statusBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 20,
-    },
-    statusText: {
-        fontSize: 10,
-        fontWeight: '800',
-        letterSpacing: 0.3,
-    },
-    actionTitle: {
-        fontSize: 15,
-        fontWeight: '700',
-        marginBottom: 6,
-    },
-    details: {
-        fontSize: 13,
-        marginBottom: 12,
-        lineHeight: 20,
-    },
-    timestamp: {
-        fontSize: 11,
-        marginTop: 4,
-    },
-    emptyContainer: {
-        paddingTop: 100,
-        alignItems: 'center',
-    },
-    emptyText: {
-        fontSize: 14,
-    },
-    loadingContainer: {
+    summaryCard: {
         flex: 1,
-        justifyContent: 'center',
+        borderWidth: 1,
+        borderRadius: 10,
+        padding: 10,
         alignItems: 'center',
     },
-    actionButtons: {
+    summaryCount: { fontSize: 16, fontWeight: '800' },
+    summaryLabel: { fontSize: 11 },
+
+    sectionTitle: {
+        fontSize: 11,
+        fontWeight: '700',
+        marginBottom: 10,
+        textTransform: 'uppercase',
+    },
+
+    priorityCard: {
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: 14,
+        marginBottom: 10,
+    },
+
+    toolName: { fontSize: 14, fontWeight: '700' },
+    description: { fontSize: 13, marginTop: 4 },
+
+    actions: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        marginTop: 8,
-        marginBottom: 12,
+        marginTop: 12,
         gap: 10,
     },
-    button: {
-        paddingHorizontal: 18,
-        paddingVertical: 9,
-        borderRadius: 10,
-        minWidth: 100,
+
+    primaryBtn: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+
+    secondaryBtn: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 8,
+        borderWidth: 1,
+    },
+
+    row: {
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
     },
-    buttonText: {
-        fontSize: 13,
-        fontWeight: '700',
-    },
-    approveButton: {
-        backgroundColor: '#1E3A8A',
-        ...Platform.select({
-            ios: { shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8 },
-            web: { boxShadow: '0 3px 12px rgba(30, 58, 138, 0.3)', cursor: 'pointer' },
-        }),
-    },
-    declineButton: {
-        backgroundColor: 'transparent',
-        borderWidth: 1.5,
-        borderColor: '#FCA5A5',
+
+    rowTitle: { fontSize: 13, fontWeight: '600' },
+    rowDesc: { fontSize: 12 },
+
+    rowTime: { fontSize: 11 },
+
+    empty: {
+        marginTop: 80,
+        alignItems: 'center',
     },
 });
 
