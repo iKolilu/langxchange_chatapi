@@ -1,228 +1,247 @@
 import React from 'react';
 import { useNavigate } from 'react-router-native';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Image, useWindowDimensions
+  View, Text, ScrollView, TouchableOpacity,
+  StyleSheet, Platform, useWindowDimensions,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { sampleMeetings } from '../data/sampleData';
-import {
-  Users, MapPin, School, Calendar, CheckCircle, MessageSquare, Award, BookOpen, Phone, Mail,
-} from 'lucide-react-native';
 import { ROLES } from '../data/teachers';
 import { useTheme } from '../contexts/ThemeContext';
+import { ChevronRight, MessageSquare, BookOpen, CheckCircle, PlusCircle } from 'lucide-react-native';
 
-const ROLE_COLORS = {
-  [ROLES.HEAD_TEACHER]: { bg: '#FEF3C7', text: '#92400E' },
-  [ROLES.SSIO]: { bg: '#EDE9FE', text: '#5B21B6' },
-  [ROLES.CURRICULUM_LEAD]: { bg: '#D1FAE5', text: '#065F46' },
-  [ROLES.CLASS_TEACHER]: { bg: '#DBEAFE', text: '#1E40AF' },
-  [ROLES.SUBJECT_TEACHER]: { bg: '#FCE7F3', text: '#9D174D' },
-};
-
-const isTeacherRole = (role) =>
-  role === ROLES.CLASS_TEACHER || role === ROLES.SUBJECT_TEACHER;
+const isTeacherRole = r =>
+  r === ROLES.CLASS_TEACHER || r === ROLES.SUBJECT_TEACHER;
 
 const Home = () => {
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
-  const { theme } = useTheme();
-  const { colors, shadows } = theme;
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 1024;
+  const navigate        = useNavigate();
+  const { theme }       = useTheme();
+  const { colors }      = theme;
+  const { width }       = useWindowDimensions();
+  const isDesktop       = width >= 1024;
 
-  const isTeacher = isTeacherRole(currentUser?.role);
-  const roleColors = ROLE_COLORS[currentUser?.role] || { bg: '#F3F4F6', text: '#374151' };
-
-  const completedMeetings = sampleMeetings.filter(m => m.status === 'completed').length;
-  const upcomingMeetings = sampleMeetings.filter(m => m.status !== 'completed').length;
-  const recentMeetings = [...sampleMeetings]
+  const isTeacher  = isTeacherRole(currentUser?.role);
+  const completed  = sampleMeetings.filter(m => m.status === 'completed').length;
+  const upcoming   = sampleMeetings.filter(m => m.status !== 'completed').length;
+  const recentList = [...sampleMeetings]
     .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 3);
+    .slice(0, 4);
 
-  const quickStats = isTeacher
+  const stats = isTeacher
     ? [
-      { label: 'PLC Sessions', value: sampleMeetings.length, icon: Calendar, color: '#1E3A8A', bgColor: '#EFF6FF' },
-      { label: 'Completed', value: completedMeetings, icon: CheckCircle, color: '#059669', bgColor: '#ECFDF5' },
-      { label: 'Upcoming', value: upcomingMeetings, icon: BookOpen, color: '#D97706', bgColor: '#FFFBEB' },
-      { label: 'Subjects', value: currentUser?.subjectsTaught?.length || 0, icon: Award, color: '#7C3AED', bgColor: '#F5F3FF' },
-    ]
+        { label: 'PLC Sessions', value: sampleMeetings.length },
+        { label: 'Completed',    value: completed },
+        { label: 'Upcoming',     value: upcoming },
+        { label: 'Subjects',     value: currentUser?.subjectsTaught?.length || 0 },
+      ]
     : [
-      { label: 'Total PLC Sessions', value: sampleMeetings.length, icon: Calendar, color: '#1E3A8A', bgColor: '#EFF6FF' },
-      { label: 'Completed', value: completedMeetings, icon: CheckCircle, color: '#059669', bgColor: '#ECFDF5' },
-      { label: 'Upcoming', value: upcomingMeetings, icon: BookOpen, color: '#D97706', bgColor: '#FFFBEB' },
-      { label: 'Pilot Schools', value: 55, icon: School, color: '#4F46E5', bgColor: '#EEF2FF' },
-    ];
+        { label: 'Total Sessions', value: sampleMeetings.length },
+        { label: 'Completed',      value: completed },
+        { label: 'Upcoming',       value: upcoming },
+        { label: 'Pilot Schools',  value: 55 },
+      ];
+
+  const quickActions = [
+    { label: 'PLC / AI Chat', icon: MessageSquare, bg: '#3B82F6', to: '/meetings' },
+    { label: 'Lesson Plans',  icon: BookOpen,      bg: '#F59E0B', to: '/lesson-plan' },
+    { label: 'Chats',         icon: MessageSquare, bg: '#60A5FA', to: '/chats' },
+    { label: 'Approvals',     icon: CheckCircle,   bg: '#6366F1', to: '/approvals' },
+  ];
 
   return (
-    <View style={[styles.outerContainer, { backgroundColor: colors.background }]}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}
-        scrollEnabled={Platform.OS !== 'web'}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: '#F8FAFC' }}
+      contentContainerStyle={styles.page}
+      scrollEnabled={Platform.OS !== 'web'}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Welcome */}
+      <View style={styles.welcomeSection}>
+        <Text style={styles.greeting}>
+          Welcome back, {currentUser?.name?.split(' ')[0]}! 👋
+        </Text>
+      </View>
 
-        {/* ── Welcome Header ── */}
-        <View style={styles.welcomeContainer}>
-          <Text style={[styles.welcomeText, { color: colors.text }]}>Welcome back, {currentUser?.name?.split(' ')[0]}!</Text>
-        </View>
+      {/* Overview cards */}
+      <View style={styles.overviewRow}>
+        {stats.map((s, i) => (
+          <View key={i} style={[styles.statCard, isDesktop ? { flex: 1, marginRight: i !== stats.length - 1 ? 16 : 0 } : { width: '47%', marginBottom: 16 }]}>
+            <Text style={styles.statLabel}>{s.label}</Text>
+            <View style={styles.statValueRow}>
+              <Text style={styles.statValue}>{s.value}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
 
-        {/* ── Quick Stats ── */}
-        <View style={styles.statsGrid}>
-          {quickStats.map((stat, idx) => {
-            const Icon = stat.icon;
+      {/* Two-column on desktop: Sessions + Actions */}
+      <View style={[styles.mainRow, isDesktop && { flexDirection: 'row' }]}>
+
+        {/* Recent sessions */}
+        <View style={[styles.sessionsCard, isDesktop && { flex: 2.2, marginRight: 24 }]}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Recent PLC Sessions</Text>
+            <TouchableOpacity onPress={() => navigate('/meetings')} activeOpacity={0.7}>
+              <Text style={styles.linkText}>View All →</Text>
+            </TouchableOpacity>
+          </View>
+
+          {recentList.map((m, idx) => {
+            const done = m.status === 'completed';
             return (
-              <View key={idx} style={[styles.statCard, { backgroundColor: colors.card, width: isDesktop ? '23%' : '48%' }]}>
-                <View style={[styles.statIconContainer, { backgroundColor: stat.bgColor }]}>
-                  <Icon size={20} color={stat.color} />
+              <TouchableOpacity
+                key={m.id}
+                style={[styles.sessionItem, idx < recentList.length - 1 && styles.itemBorder]}
+                onPress={() => navigate(`/meetings/${m.id}`)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.statusDot, { backgroundColor: done ? '#10B981' : '#3B82F6' }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.sessionTitle} numberOfLines={1}>{m.title}</Text>
+                  <Text style={styles.sessionMeta}>
+                    {new Date(m.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} • {m.time}
+                  </Text>
                 </View>
-                <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{stat.label}</Text>
-              </View>
+                <Text style={[styles.sessionStatus, { color: done ? '#10B981' : '#3B82F6' }]}>
+                  {done ? 'Completed' : 'Upcoming'}
+                </Text>
+              </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* ── Desktop Two-Column Layout ── */}
-        <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 20 }}>
+        {/* Quick actions */}
+        <View style={[styles.actionsCard, isDesktop && { flex: 1 }]}>
+          <Text style={styles.cardTitle}>Quick Actions</Text>
           
-          {/* Main Area (Recent Sessions) */}
-          <View style={{ flex: isDesktop ? 2 : 1 }}>
-            <View style={[styles.card, { backgroundColor: colors.card, marginBottom: isDesktop ? 0 : 20 }]}>
-          <View style={styles.cardHeaderRow}>
-            <Text style={[styles.cardHeader, { color: colors.text }]}>Recent PLC Sessions</Text>
-            <TouchableOpacity onPress={() => navigate('/meetings')} activeOpacity={0.7}>
-              <Text style={[styles.headerAction, { color: colors.primaryLight }]}>View All</Text>
-            </TouchableOpacity>
+          <View style={styles.actionsList}>
+            {quickActions.map((a, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.actionItem}
+                onPress={() => navigate(a.to)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.actionLeft}>
+                  <View style={[styles.actionIconBox, { backgroundColor: a.bg }]}>
+                    <a.icon size={16} color="#FFFFFF" strokeWidth={2.5} />
+                  </View>
+                  <Text style={styles.actionLabel}>{a.label}</Text>
+                </View>
+                <ChevronRight size={20} color="#3B82F6" strokeWidth={2.5} />
+              </TouchableOpacity>
+            ))}
           </View>
-          {recentMeetings.map((m) => (
-            <TouchableOpacity
-              key={m.id} style={[styles.meetingItem, { backgroundColor: colors.background }]}
-              onPress={() => navigate(`/meetings/${m.id}`)} activeOpacity={0.7}
-            >
-              <View style={[styles.meetingAccent, {
-                backgroundColor: m.status === 'completed' ? '#059669' : colors.primary
-              }]} />
-              <View style={styles.meetingContent}>
-                <Text style={[styles.meetingTitle, { color: colors.text }]}>{m.title}</Text>
-                <Text style={[styles.meetingMeta, { color: colors.textSecondary }]}>
-                  {new Date(m.date).toLocaleDateString()} · {m.time}
-                </Text>
-              </View>
-              <View style={[
-                styles.badge,
-                { backgroundColor: m.status === 'completed' ? '#ECFDF5' : '#EFF6FF' }
-              ]}>
-                <Text style={[
-                  styles.badgeText,
-                  { color: m.status === 'completed' ? '#059669' : colors.primary }
-                ]}>
-                  {m.status === 'completed' ? 'Done' : 'Upcoming'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-          </View>
-        </View>
 
-        {/* ── Side Area (Quick Actions) ── */}
-          <View style={{ flex: isDesktop ? 1 : 1 }}>
-            {/* ── Quick Actions ── */}
-            <View style={[styles.card, { backgroundColor: colors.card, marginBottom: 0 }]}>
-              <Text style={[styles.cardHeader, { color: colors.text }]}>Quick Actions</Text>
-              <View style={[styles.actionsGrid, { flexDirection: isDesktop ? 'column' : 'row' }]}>
-                <TouchableOpacity style={[styles.actionBtn, { width: isDesktop ? '100%' : '47%', backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]} onPress={() => navigate('/meetings')} activeOpacity={0.7}>
-                  <Calendar size={20} color="#1E3A8A" />
-                  <Text style={[styles.actionBtnText, { color: '#1E3A8A' }]}>PLC / AI Chat</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, { width: isDesktop ? '100%' : '47%', backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]} onPress={() => navigate('/lesson-plan')} activeOpacity={0.7}>
-                  <BookOpen size={20} color="#059669" />
-                  <Text style={[styles.actionBtnText, { color: '#059669' }]}>Lesson Plans</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, { width: isDesktop ? '100%' : '47%', backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]} onPress={() => navigate('/chats')} activeOpacity={0.7}>
-                  <MessageSquare size={20} color="#D97706" />
-                  <Text style={[styles.actionBtnText, { color: '#D97706' }]}>Chats</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, { width: isDesktop ? '100%' : '47%', backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' }]} onPress={() => navigate('/approvals')} activeOpacity={0.7}>
-                  <CheckCircle size={20} color="#7C3AED" />
-                  <Text style={[styles.actionBtnText, { color: '#7C3AED' }]}>Approvals</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-          
         </View>
-
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  outerContainer: { flex: 1 },
-  container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 32 },
+  page: { 
+    padding: 24, 
+    paddingBottom: 40,
+  },
 
-  welcomeContainer: { marginBottom: 24, marginTop: 8 },
-  welcomeText: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
+  welcomeSection: {
+    marginBottom: 24,
+  },
+  greeting: { 
+    fontSize: 22, 
+    fontWeight: '800', 
+    color: '#0F172A',
+    letterSpacing: -0.5,
+  },
 
-  // Stats grid
-  statsGrid: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    justifyContent: 'space-between', marginBottom: 20, gap: 10,
+  /* Stats Overlay Row */
+  overviewRow: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   statCard: {
-    padding: 16, borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12, 
+    padding: 20,
     ...Platform.select({
-      ios: { shadowColor: '#0F2557', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10 },
-      android: { elevation: 3 },
-      web: { boxShadow: '0 4px 16px rgba(15, 37, 87, 0.06)', transition: 'transform 0.2s ease, box-shadow 0.2s ease', cursor: 'pointer' },
+      ios:     { shadowColor: '#64748B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+      android: { elevation: 2 },
+      web:     { boxShadow: '0 2px 10px rgba(100, 116, 139, 0.06)' },
     }),
   },
-  statIconContainer: {
-    width: 40, height: 40, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
-  },
-  statValue: { fontSize: 22, fontWeight: '800' },
-  statLabel: { fontSize: 12, marginTop: 2, fontWeight: '500' },
+  statLabel: { fontSize: 14, fontWeight: '700', color: '#64748B', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  statValueRow: { flexDirection: 'row', alignItems: 'baseline' },
+  statValue: { fontSize: 36, fontWeight: '800', color: '#0F172A', letterSpacing: -1 },
 
-  // Card
-  card: {
-    borderRadius: 14, padding: 18, marginBottom: 20,
+  mainRow: { gap: 24 },
+
+  /* Cards */
+  sessionsCard: {
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 16, 
+    padding: 24,
     ...Platform.select({
-      ios: { shadowColor: '#0F2557', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10 },
-      android: { elevation: 3 },
-      web: { boxShadow: '0 4px 16px rgba(15, 37, 87, 0.06)' },
+      ios:     { shadowColor: '#64748B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+      android: { elevation: 2 },
+      web:     { boxShadow: '0 2px 10px rgba(100, 116, 139, 0.06)' },
     }),
   },
-  cardHeader: { fontSize: 16, fontWeight: '700', marginBottom: 14 },
-  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  headerAction: { fontSize: 13, fontWeight: '600' },
-
-  // Meeting item
-  meetingItem: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: 12, paddingLeft: 16, borderRadius: 10, marginBottom: 8,
-    overflow: 'hidden', position: 'relative',
-  },
-  meetingAccent: {
-    position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
-    borderRadius: 2,
-  },
-  meetingContent: { flex: 1, marginRight: 10 },
-  meetingTitle: { fontSize: 14, fontWeight: '600' },
-  meetingMeta: { fontSize: 12, marginTop: 2 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  badgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
-
-  // Actions grid
-  actionsGrid: { flexWrap: 'wrap', gap: 10 },
-  actionBtn: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'center', paddingVertical: 14,
-    borderRadius: 12, gap: 8, borderWidth: 1,
+  actionsCard: {
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 16, 
+    padding: 24,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
-      web: { boxShadow: '0 2px 8px rgba(0,0,0,0.04)', transition: 'transform 0.15s ease', cursor: 'pointer' },
+      ios:     { shadowColor: '#64748B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+      android: { elevation: 2 },
+      web:     { boxShadow: '0 2px 10px rgba(100, 116, 139, 0.06)' },
     }),
   },
-  actionBtnText: { fontSize: 13, fontWeight: '600' },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  cardTitle:  { fontSize: 17, fontWeight: '800', color: '#0F172A', marginBottom: 16 },
+  linkText:   { fontSize: 13, fontWeight: '700', color: '#3B82F6' },
+
+  /* List Items */
+  sessionItem: { 
+    flexDirection: 'row', 
+    alignItems: 'flex-start', 
+    gap: 14, 
+    paddingVertical: 18,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  itemBorder: { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  statusDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0, marginTop: 4 },
+  sessionTitle: { fontSize: 14, fontWeight: '700', color: '#1E293B', marginBottom: 4 },
+  sessionMeta: { fontSize: 13, fontWeight: '500', color: '#94A3B8' },
+  sessionStatus: { fontSize: 13, fontWeight: '700' },
+
+  /* Actions List */
+  actionsList: {
+    gap: 16,
+  },
+  actionItem: {
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    paddingVertical: 10,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  actionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  actionIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionLabel: { fontSize: 14, fontWeight: '600', color: '#334155' },
 });
 
 export default Home;

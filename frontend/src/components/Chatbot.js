@@ -967,17 +967,11 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#B91C1C',
     },
-    // ── Input ──
     inputArea: {
-        backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderTopColor: '#E2E8F0',
-        paddingTop: 10,
-        paddingHorizontal: 14,
-        paddingBottom: Platform.OS === 'ios' ? 4 : 14,
-        ...Platform.select({
-            web: { boxShadow: '0 -2px 12px rgba(15, 37, 87, 0.04)' },
-        }),
+        backgroundColor: '#F8FAFC',
+        paddingTop: 16,
+        paddingHorizontal: 16,
+        paddingBottom: Platform.OS === 'ios' ? 4 : 20,
     },
     offlineBanner: {
         flexDirection: 'row',
@@ -987,7 +981,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 8,
-        marginBottom: 8,
+        marginBottom: 12,
     },
     offlineBannerText: {
         fontSize: 12,
@@ -997,43 +991,46 @@ const styles = StyleSheet.create({
     inputRow: {
         flexDirection: 'row',
         alignItems: 'flex-end',
-        gap: 10,
-        paddingBottom: 4,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        paddingLeft: 10,
+        paddingRight: 6,
+        paddingVertical: 6,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        ...Platform.select({
+            ios: { shadowColor: '#64748B', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+            web: { boxShadow: '0 4px 12px rgba(100, 116, 139, 0.08)' },
+            android: { elevation: 2 },
+        }),
     },
     input: {
         flex: 1,
-        backgroundColor: '#F1F5F9',
-        borderRadius: 22,
-        paddingHorizontal: 18,
-        paddingVertical: 11,
+        backgroundColor: 'transparent',
+        paddingHorizontal: 10,
+        paddingVertical: 10,
         maxHeight: 120,
         fontSize: 15,
         color: '#0F172A',
-        borderWidth: 1.5,
-        borderColor: '#E2E8F0',
+        borderWidth: 0,
+        outlineStyle: 'none', // for web
+        lineHeight: 20,
     },
     inputDisabled: {
         opacity: 0.5,
     },
     sendBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: '#1E3A8A',
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#3B82F6',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        ...Platform.select({
-            ios: { shadowColor: '#1E3A8A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8 },
-            web: { boxShadow: '0 3px 12px rgba(30, 58, 138, 0.3)' },
-        }),
+        marginBottom: 2,
     },
     sendBtnDisabled: {
-        backgroundColor: '#93B5E8',
-        ...Platform.select({
-            ios: { shadowOpacity: 0 },
-            web: { boxShadow: 'none' },
-        }),
+        backgroundColor: '#E2E8F0',
     },
     // ── Sources ──
     sourcesContainer: {
