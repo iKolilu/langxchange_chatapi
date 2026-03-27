@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
     StyleSheet,
     View,
@@ -13,11 +13,10 @@ import {
     Platform
 } from 'react-native';
 import { useNavigate } from 'react-router-native';
-import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { MessageSquare, Search, Trash2, ChevronRight } from 'lucide-react-native';
+import { MessageSquare, Search, Trash2, Sparkles } from 'lucide-react-native';
 
-// ─── Sample Session Data (Following november_mobile schema) ────────────────
+// ─── Sample Session Data ───────────────────────────────────────────────
 const INITIAL_SESSIONS = [
     {
         id: 'sess-1',
@@ -48,18 +47,25 @@ const INITIAL_SESSIONS = [
     }
 ];
 
-const AVATAR_COLORS = ['#1E3A8A', '#059669', '#D97706', '#7C3AED', '#DC2626'];
+// ─── HELPERS ────────────────────────────────────────────────
+const formatTime = (date) => {
+    const diff = Date.now() - new Date(date).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'now';
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    return '1d';
+};
 
 const Chats = () => {
     const navigate = useNavigate();
-    const { currentUser } = useAuth();
     const { theme } = useTheme();
     const { colors } = theme;
 
     const [sessions, setSessions] = useState(INITIAL_SESSIONS);
     const [search, setSearch] = useState('');
     const [refreshing, setRefreshing] = useState(false);
-    const [revealedId, setRevealedId] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
 
     const onRefresh = useCallback(() => {
@@ -70,123 +76,164 @@ const Chats = () => {
     const confirmDelete = (sessionId, agentName) => {
         const deleteAction = () => {
             setDeletingId(sessionId);
-            setRevealedId(null);
             setTimeout(() => {
                 setSessions(prev => prev.filter(s => s.sessionUuid !== sessionId));
                 setDeletingId(null);
-            }, 600);
+            }, 500);
         };
 
         if (Platform.OS === 'web') {
-            if (window.confirm(`Delete your chat with "${agentName}"?`)) {
-                deleteAction();
-            } else {
-                setRevealedId(null);
-            }
+            if (window.confirm(`Delete "${agentName}" session?`)) deleteAction();
         } else {
             Alert.alert(
                 'Delete Chat',
-                `Delete your chat with "${agentName}"? This cannot be undone.`,
+                `Delete your chat with "${agentName}"?`,
                 [
-                    { text: 'Cancel', style: 'cancel', onPress: () => setRevealedId(null) },
+                    { text: 'Cancel', style: 'cancel' },
                     { text: 'Delete', style: 'destructive', onPress: deleteAction },
                 ]
             );
         }
     };
 
-    const filteredSessions = sessions.filter(s =>
-        s.agentName.toLowerCase().includes(search.toLowerCase()) ||
-        s.lastMessage.toLowerCase().includes(search.toLowerCase())
-    ).sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+    const filtered = useMemo(() => {
+        return sessions
+            .filter(s =>
+                s.agentName.toLowerCase().includes(search.toLowerCase()) ||
+                s.lastMessage.toLowerCase().includes(search.toLowerCase())
+            )
+            .sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
+    }, [sessions, search]);
 
-    const renderSession = ({ item, index }) => {
-        const isRevealed = revealedId === item.sessionUuid;
+    const active = filtered.slice(0, 2);
+    const rest = filtered.slice(2);
+
+    // ─── ACTIVE CARD ─────────────────────────────────────────
+    const ActiveCard = ({ item }) => (
+        <TouchableOpacity
+            style={[styles.activeCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => navigate(`/meetings/${item.sessionUuid}`)}
+            activeOpacity={0.8}
+        >
+            <View style={styles.activeHeader}>
+                <Sparkles size={14} color={colors.primary} />
+                <Text style={[styles.activeLabel, { color: colors.primary }]}>
+                    Active
+                </Text>
+            </View>
+
+            <Text style={[styles.activeTitle, { color: colors.text }]}>
+                {item.agentName}
+            </Text>
+
+            <Text style={[styles.activeMessage, { color: colors.textSecondary }]} numberOfLines={2}>
+                {item.lastMessage}
+            </Text>
+
+            <Text style={[styles.activeTime, { color: colors.textMuted }]}>
+                {formatTime(item.lastMessageAt)}
+            </Text>
+        </TouchableOpacity>
+    );
+
+    // ─── LIST ROW ────────────────────────────────────────────
+    const Row = ({ item }) => {
         const isDeleting = deletingId === item.sessionUuid;
-        const avatarColor = AVATAR_COLORS[index % AVATAR_COLORS.length];
 
         return (
-            <View style={styles.rowWrapper}>
+            <View style={[styles.row, { borderBottomColor: colors.border }]}>
                 <TouchableOpacity
-                    onPress={() => isRevealed ? setRevealedId(null) : navigate(`/meetings/${item.sessionUuid}`)}
-                    onLongPress={() => setRevealedId(isRevealed ? null : item.sessionUuid)}
-                    activeOpacity={0.7}
-                    style={[
-                        styles.sessionRow,
-                        { backgroundColor: colors.card, borderColor: colors.border },
-                        isRevealed && styles.sessionRowRevealed
-                    ]}
+                    style={{ flex: 1 }}
+                    onPress={() => navigate(`/meetings/${item.sessionUuid}`)}
                 >
-                    {/* Avatar with gradient ring */}
-                    <View style={[styles.avatarRing, { borderColor: avatarColor + '30' }]}>
-                        <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-                            <Text style={styles.avatarText}>
-                                {item.agentName.charAt(0).toUpperCase()}
-                            </Text>
-                        </View>
-                    </View>
-
-                    {/* Content */}
-                    <View style={styles.sessionContent}>
-                        <View style={styles.sessionHeader}>
-                            <Text style={[styles.agentName, { color: colors.text }]} numberOfLines={1}>
-                                {item.agentName}
-                            </Text>
-                            <Text style={[styles.timestamp, { color: colors.textMuted }]}>
-                                {new Date(item.lastMessageAt).toLocaleDateString()}
-                            </Text>
-                        </View>
-                        <Text style={[styles.lastMessage, { color: colors.textSecondary }]} numberOfLines={1}>
-                            {item.lastMessage}
-                        </Text>
-                    </View>
-
-                    {!isRevealed && (
-                        <ChevronRight size={16} color={colors.textMuted} />
-                    )}
+                    <Text style={[styles.rowTitle, { color: colors.text }]}>
+                        {item.agentName}
+                    </Text>
+                    <Text style={[styles.rowMessage, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {item.lastMessage}
+                    </Text>
                 </TouchableOpacity>
 
-                {(isRevealed || isDeleting) && (
-                    <TouchableOpacity
-                        style={[styles.deleteBtn, { opacity: isDeleting ? 0.5 : 1 }]}
-                        onPress={() => confirmDelete(item.sessionUuid, item.agentName)}
-                        disabled={isDeleting}
-                        activeOpacity={0.8}
-                    >
+                <View style={styles.rowRight}>
+                    <Text style={[styles.rowTime, { color: colors.textMuted }]}>
+                        {formatTime(item.lastMessageAt)}
+                    </Text>
+
+                    <TouchableOpacity onPress={() => confirmDelete(item.sessionUuid, item.agentName)}>
                         {isDeleting ? (
-                            <ActivityIndicator color="#fff" size="small" />
+                            <ActivityIndicator size="small" />
                         ) : (
-                            <>
-                                <Trash2 size={14} color="#fff" style={{ marginRight: 6 }} />
-                                <Text style={styles.deleteBtnText}>Delete Session</Text>
-                            </>
+                            <Trash2 size={14} color={colors.textMuted} />
                         )}
                     </TouchableOpacity>
-                )}
+                </View>
             </View>
         );
     };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={styles.searchContainer}>
+
+            {/* HEADER */}
+            <View style={styles.header}>
+                <Text style={[styles.title, { color: colors.text }]}>
+                    Workspace
+                </Text>
+                <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+                    Continue working on your sessions
+                </Text>
+            </View>
+
+            {/* SEARCH */}
+            <View style={styles.searchWrap}>
                 <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                    <Search size={16} color={colors.textMuted} style={{ marginRight: 10 }} />
+                    <Search size={14} color={colors.textMuted} />
                     <TextInput
-                        style={[styles.searchInput, { color: colors.text }]}
                         placeholder="Search sessions..."
                         placeholderTextColor={colors.textMuted}
                         value={search}
                         onChangeText={setSearch}
+                        style={[styles.input, { color: colors.text }]}
                     />
                 </View>
             </View>
 
             <FlatList
-                data={filteredSessions}
-                keyExtractor={(item) => item.sessionUuid}
-                renderItem={renderSession}
-                contentContainerStyle={styles.listContent}
+                data={[{ key: 'content' }]}
+                renderItem={() => (
+                    <View style={{ padding: 16 }}>
+
+                        {/* ACTIVE */}
+                        {active.length > 0 && (
+                            <>
+                                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+                                    Active Sessions
+                                </Text>
+                                {active.map(item => (
+                                    <ActiveCard key={item.sessionUuid} item={item} />
+                                ))}
+                            </>
+                        )}
+
+                        {/* ALL */}
+                        <Text style={[styles.sectionTitle, { color: colors.textMuted, marginTop: 20 }]}>
+                            All Conversations
+                        </Text>
+
+                        {rest.map(item => (
+                            <Row key={item.sessionUuid} item={item} />
+                        ))}
+
+                        {filtered.length === 0 && (
+                            <View style={styles.empty}>
+                                <MessageSquare size={40} color={colors.textMuted} />
+                                <Text style={{ color: colors.textMuted, marginTop: 8 }}>
+                                    No sessions found
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                )}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />
                 }
@@ -203,71 +250,63 @@ const Chats = () => {
     );
 };
 
+// ─── STYLES ────────────────────────────────────────────────
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    searchContainer: { padding: 16, paddingBottom: 8 },
+
+    header: { padding: 16 },
+    title: { fontSize: 20, fontWeight: '800' },
+    subtitle: { fontSize: 13, marginTop: 4 },
+
+    searchWrap: { paddingHorizontal: 16, paddingBottom: 8 },
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 14,
-        height: 46,
-        borderRadius: 12,
-        borderWidth: 1.5,
-        ...Platform.select({
-            ios: { shadowColor: '#0F2557', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
-            web: { boxShadow: '0 2px 8px rgba(15, 37, 87, 0.04)' },
-        }),
-    },
-    searchInput: { flex: 1, fontSize: 14, fontWeight: '400' },
-    listContent: { paddingHorizontal: 16, paddingBottom: 32 },
-    rowWrapper: { marginBottom: 10, borderRadius: 14, overflow: 'hidden' },
-    sessionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 14,
-        borderRadius: 14,
+        height: 40,
+        borderRadius: 10,
         borderWidth: 1,
-        ...Platform.select({
-            ios: { shadowColor: '#0F2557', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6 },
-            web: { boxShadow: '0 2px 8px rgba(15, 37, 87, 0.04)' },
-        }),
+        paddingHorizontal: 10,
+        gap: 6,
     },
-    sessionRowRevealed: {
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
+    input: { flex: 1, fontSize: 13 },
+
+    sectionTitle: {
+        fontSize: 11,
+        fontWeight: '700',
+        marginBottom: 10,
+        textTransform: 'uppercase',
     },
-    avatarRing: {
-        width: 50, height: 50, borderRadius: 25,
-        borderWidth: 2, alignItems: 'center', justifyContent: 'center',
-        marginRight: 12,
+
+    activeCard: {
+        borderWidth: 1,
+        borderRadius: 14,
+        padding: 14,
+        marginBottom: 10,
     },
-    avatar: {
-        width: 42, height: 42, borderRadius: 21,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    avatarText: { fontSize: 17, fontWeight: '800', color: '#fff' },
-    sessionContent: { flex: 1, marginRight: 8 },
-    sessionHeader: {
+    activeHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+    activeLabel: { fontSize: 11, fontWeight: '700' },
+    activeTitle: { fontSize: 14, fontWeight: '700' },
+    activeMessage: { fontSize: 13, marginTop: 4 },
+    activeTime: { fontSize: 11, marginTop: 6 },
+
+    row: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 4,
-    },
-    agentName: { fontSize: 14, fontWeight: '700', flex: 1 },
-    timestamp: { fontSize: 11, fontWeight: '500' },
-    lastMessage: { fontSize: 13 },
-    deleteBtn: {
-        backgroundColor: '#DC2626',
         paddingVertical: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
-        borderBottomLeftRadius: 14,
-        borderBottomRightRadius: 14,
+        borderBottomWidth: 1,
     },
-    deleteBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-    emptyContainer: { paddingTop: 100, alignItems: 'center' },
-    emptyText: { fontSize: 14, marginTop: 12 },
+    rowTitle: { fontSize: 14, fontWeight: '600' },
+    rowMessage: { fontSize: 12, marginTop: 2 },
+
+    rowRight: {
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+    },
+    rowTime: { fontSize: 11, marginBottom: 6 },
+
+    empty: {
+        marginTop: 80,
+        alignItems: 'center',
+    },
 });
 
 export default Chats;
