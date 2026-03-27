@@ -22,7 +22,7 @@ class SimpleChatCLI:
         # Configuration
         self.company_id = "demo-company-001"
         self.app_uuid = "GMA73HIA1LSQ"
-        self.api_key = "nv_5fV_hQa6q2OVOExP6ykQxxojYRjAGgzDL6BjMROq8jY"
+        self.api_key = "nv_Uwx3h8PWalTyFAYT_KCNErXrEO_NEgZcMLXcMMa4IbA"
         self.agent_uuid = "f548d5fd-05a7-4d7f-9d31-00b9fedf70b1"
         self.user_id = "ext@demo.com"
         
