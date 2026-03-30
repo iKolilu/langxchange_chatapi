@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     # Internal API authentication credentials
     auth_email: str = "ext@demo.com"
-    auth_password: str = "p@ssw0rd"
+    auth_password: str = "p@ss"
 
     # Application settings
     app_name: str = "Chat API Gateway"
